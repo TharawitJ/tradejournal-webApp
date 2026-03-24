@@ -9,7 +9,7 @@ const Journal = lazy(() => import("../pages/Journal"));
 const Register = lazy(() => import("../pages/Register"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const ConfirmResetPW = lazy(() => import("../pages/confirmResetPassword"));
-import UserLayout from "../layouts/UserLayout";
+import UserLayout from "../layouts/UserRouterLayout";
 
 const guestRouter = createBrowserRouter([
   { path: "/", Component: Login },

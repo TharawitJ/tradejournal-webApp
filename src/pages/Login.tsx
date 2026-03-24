@@ -1,100 +1,57 @@
-import { useState } from 'react';
+import { useState } from "react";
+import { NavLink } from "react-router";
 
 export default function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = (e: React.SubmitEvent) => {
     e.preventDefault();
     // Handle login logic here
-    console.log('Login attempt:', { username, password });
+    console.log("Login attempt:", { username, password });
   };
 
   const handleRegister = () => {
     // Handle register logic here
-    console.log('Register clicked');
+    console.log("Register clicked");
   };
 
   const handleResetPassword = () => {
     // Handle reset password logic here
-    console.log('Reset password clicked');
+    console.log("Reset password clicked");
   };
 
   return (
-    <div className="content-stretch flex flex-col min-h-screen items-center justify-center px-4 py-8 relative w-full" data-name="Root Login">
-      {/* Background with image overlay */}
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-        <div className="absolute bg-[#c9c9c9] inset-0" />
-        {/* Background */}
-        {/* <img alt="" className="absolute max-w-none object-cover opacity-30 size-full" /> */}
-      </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#c9c9c9] p-[5%] font-sans">
+      <div className="bg-white border-2 border-black rounded-[2rem] w-full sm:w-[80%] md:w-[60%] lg:w-[45%] xl:w-[40%] p-[6%] flex flex-col items-center gap-6 sm:gap-8">
+        <input
+          type="text"
+          placeholder="Username"
+          className="w-full border border-[#cac4d0] rounded-lg p-[3%] sm:p-[4%] text-center text-lg sm:text-xl text-[#777272] outline-none focus:ring-2 focus:ring-[#cac4d0] transition-shadow"
+        />
 
-      {/* Login form card */}
-      <div className="bg-white relative rounded-[35px] w-full max-w-[687px] z-10">
-        <div className="flex flex-col items-center justify-center overflow-clip rounded-[inherit] size-full">
-          <form onSubmit={handleLogin} className="content-stretch flex flex-col gap-[36px] items-center justify-center px-[30px] py-[34px] relative w-full">
-            
-            {/* Username input */}
-            <div className="relative w-full max-w-[627px]">
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
-                className="w-full h-[50px] px-[12px] py-[6px] rounded-[8px] border border-[#cac4d0] font-['Inter:Regular',sans-serif] text-[24px] text-[#777272] placeholder:text-[#777272] focus:outline-none focus:border-[#2c2c2c] transition-colors"
-              />
-            </div>
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border border-[#cac4d0] rounded-lg p-[3%] sm:p-[4%] text-center text-lg sm:text-xl text-[#777272] outline-none focus:ring-2 focus:ring-[#cac4d0] transition-shadow"
+        />
 
-            {/* Password input */}
-            <div className="relative w-full max-w-[627px]">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full h-[50px] px-[12px] py-[6px] rounded-[8px] border border-[#cac4d0] font-['Inter:Regular',sans-serif] text-[24px] text-[#777272] placeholder:text-[#777272] focus:outline-none focus:border-[#2c2c2c] transition-colors"
-              />
-            </div>
+        <button className="w-full bg-[#c7f9ff] border border-[#2c2c2c] rounded-lg p-[3%] sm:p-[4%] text-xl sm:text-2xl text-black hover:bg-[#b0f0f8] transition-colors">
+          Login
+        </button>
+        <NavLink to="/reset_password">
+          <button className="text-black text-sm sm:text-base hover:underline my-[2%]">
+            reset password
+          </button>
+        </NavLink>
 
-            {/* Login button */}
-            <button
-              type="submit"
-              className="bg-[#c7f9ff] h-[45px] w-full max-w-[627px] rounded-[8px] border border-[#2c2c2c] font-['Inter:Regular',sans-serif] text-[25px] text-black hover:bg-[#b0e8ef] transition-colors"
-            >
-              Login
-            </button>
+        <hr className="w-full border-t border-[#C2C2C2]" />
 
-            {/* Reset password link */}
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              className="font-['Inter:Regular',sans-serif] text-[15px] text-black hover:underline transition-all"
-            >
-              reset password
-            </button>
-
-            {/* Divider line */}
-            <div className="h-0 w-full max-w-[627px]">
-              <div className="relative">
-                <svg className="block w-full h-[1px]" fill="none" preserveAspectRatio="none" viewBox="0 0 627 1">
-                  <line stroke="#C2C2C2" x2="627" y1="0.5" y2="0.5" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Register button */}
-            <button
-              type="button"
-              onClick={handleRegister}
-              className="bg-[rgba(99,157,170,0.65)] h-[45px] w-full max-w-[505px] rounded-[8px] font-['Inter:Regular',sans-serif] text-[25px] text-black hover:bg-[rgba(99,157,170,0.8)] transition-colors"
-            >
-              Register
-            </button>
-          </form>
-        </div>
-        
-        {/* Card border */}
-        <div aria-hidden="true" className="absolute border-2 border-black border-solid inset-0 pointer-events-none rounded-[35px]" />
+        <NavLink to="/register">
+          <button className="w-[full] bg-[rgba(99,157,170,0.65)] rounded-lg p-[15%]  text-xl  text-black hover:bg-[rgba(99,157,170,0.8)] transition-colors">
+            Register
+          </button>
+        </NavLink>
       </div>
     </div>
   );

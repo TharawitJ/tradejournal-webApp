@@ -13,7 +13,7 @@ export default function ConfirmResetPW() {
       </div>
 
       {/* Main content card */}
-      <div className="bg-white rounded-[20px] w-[1000px] h-[700px] p-[10px] border flex flex-col items-center gap-[10px]">
+      <div className="bg-white rounded-[20px] w-70% h-60%0 p-[10px] border flex flex-col items-center gap-[10px]">
         
         {/* Header - Reset Password */}
         <div className="w-full flex items-center justify-center px-[250px] py-[95px]">
