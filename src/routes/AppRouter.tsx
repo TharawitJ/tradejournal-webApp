@@ -1,21 +1,37 @@
 import { lazy, Suspense } from "react";
 import React from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
-import Login from "../pages/Login";
-const Home = lazy(() => import("../pages/Home"));
-const Chart = lazy(() => import("../pages/Chart"));
-const Dashboard = lazy(() => import("../pages/Dashboard"));
-const Journal = lazy(() => import("../pages/Journal"));
-const Register = lazy(() => import("../pages/Register"));
-const ResetPassword = lazy(() => import("../pages/ResetPassword"));
-const ConfirmResetPW = lazy(() => import("../pages/confirmResetPassword"));
+import LoginScreen from "../pages/guest/login_screen";
+const RegisterScreen = lazy(() => import("../pages/guest/register_screen"));
+const ResetPassword2 = lazy(() => import("../pages/guest/reset_password"));
+const AccountRecovery = lazy(() => import("../pages/guest/account_recovery"));
+const JournalPage = lazy(() => import("../pages/user/Journal_page"));
+const AssetChartStockView = lazy(
+  () => import("../pages/user/asset_chart_stock_view"),
+);
+const FullPerformanceDashboard = lazy(
+  () => import("../pages/user/full_performance_dashboard"),
+);
+const UpdatedSummaryDashboard = lazy(
+  () => import("../pages/user/updated_summary_dashboard"),
+);
 import UserLayout from "../layouts/UserRouterLayout";
 
+// const testRouter = createBrowserRouter([
+//   { path: "/", Component: LoginScreen },
+//   { path: "1", Component: RegisterScreen },
+//   { path: "/2", Component: ResetPassword2 },
+//   { path: "/3", Component: AssetChartStockView },
+//   { path: "/4", Component: AccountRecovery },
+//   { path: "/5", Component: FullPerformanceDashboard },
+//   { path: "/6", Component: UpdatedSummaryDashboard },
+// ]);
+
 const guestRouter = createBrowserRouter([
-  { path: "/", Component: Login },
-  { path: "/ConfirmResetPW", Component: ConfirmResetPW },
-  { path: "/reset_password", Component: ResetPassword },
-  { path: "/register", Component: Register },
+  { path: "/", Component: LoginScreen },
+  { path: "/account_recovery", Component: AccountRecovery },
+  { path: "/reset_password", Component: ResetPassword2 },
+  { path: "/register", Component: RegisterScreen },
   { path: "*", element: <Navigate to="/" /> },
 ]);
 // No guest available
@@ -24,10 +40,10 @@ const userRouter = createBrowserRouter([
     path: "/",
     Component: UserLayout,
     children: [
-      { index: true, Component: Home },
-      { path: "chart", Component: Chart },
-      { path: "dashboard", Component: Dashboard },
-      { path: "journal", Component: Journal },
+      { index: true, Component: UpdatedSummaryDashboard },
+      { path: "chart", Component: AssetChartStockView },
+      { path: "dashboard", Component: FullPerformanceDashboard },
+      { path: "journal", Component: JournalPage },
       { path: "*", element: <Navigate to="/" /> },
     ],
   },
@@ -35,12 +51,12 @@ const userRouter = createBrowserRouter([
 
 function AppRouter() {
   // set state user
-    // const finalRouter = user ? userRouter : guestRouter
+  // const finalRouter = user ? userRouter : guestRouter
   return (
     <Suspense
       fallback={<span className="loading loading-dots loading-xl"></span>}
     >
-      {<RouterProvider router={guestRouter}></RouterProvider>}
+      {<RouterProvider router={userRouter}></RouterProvider>}
     </Suspense>
   );
 }
