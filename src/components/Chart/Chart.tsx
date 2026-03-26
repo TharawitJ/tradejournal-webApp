@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect } from "react";
 import {
   Chart,
   CandlestickSeries,
   PriceLine,
 } from "lightweight-charts-react-components";
 import { CrosshairMode, LineStyle } from "lightweight-charts";
+import { useChartStore } from "../../stores/chartStore";
+import { getBinanceWSUrl } from "../../api/apiChart";
 
-const SYMBOL = "BTCUSDT";
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
 const chartOptions = {
@@ -41,67 +42,31 @@ const seriesOptions = {
 };
 
 export default function BinanceChart() {
-  const [data, setData] = useState<any[]>([]);
-  const [interval, setInterval] = useState("1m");
-  const [position, setPosition] = useState<"long" | "short" | null>(null);
-  const [entryPrice, setEntryPrice] = useState<number | "">("");
-  const [stopLoss, setStopLoss] = useState<number | "">("");
-  const [takeProfit, setTakeProfit] = useState<number | "">("");
-  
-  const lastPrice = data.length > 0 ? data[data.length - 1].close : null;
-  const lastCandleRef = useRef<any>(null);
-
-  const handleSetPosition = (type: "long" | "short") => {
-    if (position === type) {
-      // Toggle off
-      setPosition(null);
-      setEntryPrice("");
-      setStopLoss("");
-      setTakeProfit("");
-      return;
-    }
-
-    if (lastPrice) {
-      setPosition(type);
-      const entry = Number(lastPrice.toFixed(3));
-      setEntryPrice(entry);
-      
-      const offset = entry * 0.01; // 1% default
-      const sl = type === "long" ? entry - offset : entry + offset;
-      const tp = type === "long" ? entry + offset : entry - offset;
-      
-      setStopLoss(Number(sl.toFixed(3)));
-      setTakeProfit(Number(tp.toFixed(3)));
-    }
-  };
+  const {
+    data,
+    timeframe,
+    setTimeframe,
+    position,
+    entryPrice,
+    stopLoss,
+    takeProfit,
+    assetName,
+    setEntryPrice,
+    setStopLoss,
+    setTakeProfit,
+    togglePosition,
+    loadHistoricalData,
+    updateLastCandle,
+  } = useChartStore();
 
   // 📥 Load historical data
   useEffect(() => {
-    let isMounted = true;
-    setData([]); // 🟢 Fix: Clear data immediately on interval change
-    const REST_URL = `https://api.binance.com/api/v3/klines?symbol=${SYMBOL}&interval=${interval}&limit=1000`;
-    
-    fetch(REST_URL)
-      .then((res) => res.json())
-      .then((raw) => {
-        if (!isMounted) return;
-        const formatted = raw.map((c: any) => ({
-          time: c[0] / 1000,
-          open: +c[1],
-          high: +c[2],
-          low: +c[3],
-          close: +c[4],
-        }));
-
-        setData(formatted);
-        lastCandleRef.current = formatted[formatted.length - 1];
-      });
-    return () => { isMounted = false; };
-  }, [interval]);
+    loadHistoricalData();
+  }, [timeframe, loadHistoricalData]);
 
   // 🔌 WebSocket live updates
   useEffect(() => {
-    const WS_URL = `wss://stream.binance.com:9443/ws/${SYMBOL.toLowerCase()}@kline_${interval}`;
+    const WS_URL = getBinanceWSUrl(assetName,timeframe);
     const ws = new WebSocket(WS_URL);
 
     ws.onmessage = (event) => {
@@ -116,29 +81,11 @@ export default function BinanceChart() {
         close: +k.c,
       };
 
-      setData((prev) => {
-        if (prev.length === 0) return [candle];
-        const last = prev[prev.length - 1];
-
-        // 🔴 Safety check: ignore out-of-order candles from previous interval or delays
-        if (last && candle.time < last.time) {
-          return prev;
-        }
-
-        // 🟡 If same candle → update
-        if (last && last.time === candle.time) {
-          const updated = [...prev];
-          updated[updated.length - 1] = candle;
-          return updated;
-        }
-
-        // 🟢 New candle → append
-        return [...prev, candle];
-      });
+      updateLastCandle(candle);
     };
 
     return () => ws.close();
-  }, [interval]);
+  }, [assetName,timeframe, updateLastCandle]);
 
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
@@ -158,16 +105,16 @@ export default function BinanceChart() {
         {TIMEFRAMES.map((tf) => (
           <button
             key={tf}
-            onClick={() => setInterval(tf)}
+            onClick={() => setTimeframe(tf)}
             style={{
               padding: "4px 8px",
               fontSize: "16px",
-              background: interval === tf ? "#2962ff" : "transparent",
-              color: interval === tf ? "white" : "#d1d4dc",
+              background: timeframe === tf ? "#2962ff" : "transparent",
+              color: timeframe === tf ? "white" : "#d1d4dc",
               border: "none",
               borderRadius: "2px",
               cursor: "pointer",
-              fontWeight: interval === tf ? "bold" : "normal",
+              fontWeight: timeframe === tf ? "bold" : "normal",
               transition: "all 0.2s"
             }}
           >
@@ -195,7 +142,7 @@ export default function BinanceChart() {
       }}>
         <div style={{ display: "flex", gap: "10px" }}>
           <button 
-            onClick={() => handleSetPosition("long")}
+            onClick={() => togglePosition("long")}
             style={{
               flex: 1,
               padding: "8px",
@@ -209,8 +156,9 @@ export default function BinanceChart() {
           >
             LONG
           </button>
+
           <button 
-            onClick={() => handleSetPosition("short")}
+            onClick={() => togglePosition("short")}
             style={{
               flex: 1,
               padding: "8px",
@@ -263,36 +211,42 @@ export default function BinanceChart() {
         )}
       </div>
 
-      <Chart key={interval} autoSize options={chartOptions} >
+      <Chart key={timeframe} autoSize options={chartOptions} >
         <CandlestickSeries data={data} options={seriesOptions}>
           {entryPrice !== "" && (
             <PriceLine
               price={Number(entryPrice)}
-              color="#ffffff"
-              lineWidth={2}
-              lineStyle={LineStyle.Solid}
-              axisLabelVisible={true}
-              title={position === "long" ? "LONG" : "SHORT"}
+              options={{
+                title: position === "long" ? "ENTRY LONG" : "ENTRY SHORT",
+                color: "#7E89AC",
+                lineWidth: 2,
+                axisLabelVisible: true,
+                lineStyle: LineStyle.LargeDashed,
+              }}
             />
           )}
           {stopLoss !== "" && (
             <PriceLine
               price={Number(stopLoss)}
-              color="#ffffff"
-              lineWidth={2}
-              lineStyle={LineStyle.Dashed}
-              axisLabelVisible={true}
-              title="SL"
+              options={{
+                title: "SL",
+                color: "#ff6b6b",
+                lineWidth: 2,
+                axisLabelVisible: true,
+                lineStyle: LineStyle.Solid,
+              }}
             />
           )}
           {takeProfit !== "" && (
             <PriceLine
               price={Number(takeProfit)}
-              color="#ffffff"
-              lineWidth={2}
-              lineStyle={LineStyle.Dashed}
-              axisLabelVisible={true}
-              title="TP"
+              options={{
+                title: "TP",
+                color: "#28a49c",
+                lineWidth: 2,
+                axisLabelVisible: true,
+                lineStyle: LineStyle.Solid,
+              }}
             />
           )}
         </CandlestickSeries>

@@ -2,6 +2,13 @@ import React from "react";
 import { NavLink } from "react-router";
 
 function Header() {
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `pb-1 transition-all duration-200 ${
+      isActive
+        ? "text-[#9cff93] border-b-2 border-[#9cff93] font-bold"
+        : "text-[#adaaaa] font-medium hover:text-white"
+    }`;
+
   return (
     <>
       {/* TopAppBar */}
@@ -32,38 +39,18 @@ function Header() {
         {/* Layer 2: Navigation */}
         <div className="bg-[#0e0e0e] w-full">
           <nav className="flex items-center gap-8 px-6 h-14 max-w-screen-2xl mx-auto font-body text-sm">
-            <NavLink to="/home">
-              <a
-                className="text-[#adaaaa] font-medium hover:text-white transition-colors"
-                href="#"
-              >
-                Home
-              </a>
-            </NavLink>{" "}{" "}
-            <NavLink to="/chart">
-              <a
-                className="text-[#adaaaa] font-medium hover:text-white transition-colors"
-                href="#"
-              >
-                Chart
-              </a>
-            </NavLink>{" "}{" "}
-            <NavLink to="/journal">
-              <a
-                className="text-[#9cff93] border-b-2 border-[#9cff93] pb-1 font-bold"
-                href="#"
-              >
-                Journal
-              </a>
-            </NavLink>{" "}{" "}
-            <NavLink to="/dashboard">
-              <a
-                className="text-[#adaaaa] font-medium hover:text-white transition-colors"
-                href="#"
-              >
-                Dashboard
-              </a>
-            </NavLink>{" "}
+            <NavLink to="/home" className={navLinkClass}>
+              Home
+            </NavLink>
+            <NavLink to="/chart" className={navLinkClass}>
+              Chart
+            </NavLink>
+            <NavLink to="/journal" className={navLinkClass}>
+              Journal
+            </NavLink>
+            <NavLink to="/dashboard" className={navLinkClass}>
+              Dashboard
+            </NavLink>
           </nav>
         </div>
       </header>

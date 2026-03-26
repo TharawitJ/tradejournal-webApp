@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router";
-import Header from "../components/User/Header";
+import Header from "../components/user/Header";
 function UserLayout() {
   return (
     <>
