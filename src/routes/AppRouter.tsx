@@ -6,9 +6,10 @@ const RegisterScreen = lazy(() => import("../pages/guest/register_screen"));
 const ResetPassword2 = lazy(() => import("../pages/guest/reset_password"));
 const AccountRecovery = lazy(() => import("../pages/guest/account_recovery"));
 const JournalPage = lazy(() => import("../pages/user/Journal_page"));
-const AssetChartStockView = lazy(
-  () => import("../pages/user/asset_chart_stock_view"),
-);
+// const AssetChartStockView = lazy(
+// () => import("../pages/user/asset_chart_stock_view"),
+// );
+import AssetChartStockView from "../pages/user/asset_chart_stock_view";
 const FullPerformanceDashboard = lazy(
   () => import("../pages/user/full_performance_dashboard"),
 );
