@@ -1,7 +1,37 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NavLink } from "react-router";
 
 function Header() {
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Handle potential negative scroll (iOS bounce)
+      if (currentScrollY <= 0) {
+        setIsVisible(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      // Add a small delta to prevent jitter
+      const diff = currentScrollY - lastScrollY.current;
+      if (Math.abs(diff) < 10) return;
+
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `pb-1 transition-all duration-200 ${
       isActive
@@ -12,7 +42,11 @@ function Header() {
   return (
     <>
       {/* TopAppBar */}
-      <header className="bg-[#0e0e0e] w-full sticky top-0 z-50 border-b border-b-gray-700">
+      <header
+        className={`bg-[#0e0e0e] w-full sticky top-0 z-50 border-b border-b-gray-700 transition-transform duration-300 ease-in-out ${
+          isVisible ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
         {/* Layer 1: Profile & Logout */}
         <div className="flex justify-between items-center px-6 py-4 max-w-screen-2xl mx-auto">
           <div className="text-2xl font-black tracking-tighter text-[#9cff93] font-headline uppercase">

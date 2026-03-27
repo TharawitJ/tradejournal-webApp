@@ -101,7 +101,7 @@ const AssetChartStockView: React.FC = () => {
   return (
     <div className="bg-[#0e0e0e] text-[#ffffff] min-h-screen">
       <main className="pt-5 pb-12 px-6 max-w-screen-2xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-5 gap-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3 ">
@@ -121,14 +121,14 @@ const AssetChartStockView: React.FC = () => {
                   <option className="text-black" value="SOLUSDT">SOLUSDT</option>
                 </select>
               </div>
-              <h2 className="font-bold text-5xl md:text-6xl tracking-tighter">
+              <h2 className="font-bold text-3xl tracking-tighter">
                 {assetName}
               </h2>
             </div>
 
             <button
               onClick={handleRecordJournal}
-              className="border border-white/20 text-white px-8 py-4 rounded-md font-bold text-sm tracking-widest flex items-center gap-3 hover:bg-white/10 active:scale-95 transition-all"
+              className="border border-white/20 text-white px-2 py-2 rounded-md font-bold tracking-widest flex items-center  hover:bg-white/10 active:scale-95 transition-all text-[10px]"
             >
               RECORD JOURNAL
             </button>
@@ -136,7 +136,7 @@ const AssetChartStockView: React.FC = () => {
         </div>
 
         <section className="mb-14">
-          <div className="w-full h-[600px] bg-[#1a1a1a] rounded-xl relative overflow-hidden border border-white/5">
+          <div className="w-[95%] h-[600px] bg-[#1a1a1a] rounded-xl relative overflow-hidden border border-white/5 mx-auto">
             <BinanceChart />
           </div>
         </section>
@@ -238,7 +238,7 @@ const AssetChartStockView: React.FC = () => {
       )}
 
       {/* Floating Buttons */}
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+      {/* <div className="fixed bottom-8 right-8 flex flex-col gap-4">
         <button className="w-14 h-14 bg-[#1a1a1a] text-white rounded-full flex items-center justify-center border border-white/10 hover:bg-[#252525] transition-all active:scale-90">
           <span className="material-symbols-outlined">camera</span>
         </button>
@@ -248,7 +248,7 @@ const AssetChartStockView: React.FC = () => {
         >
           <span className="material-symbols-outlined">add</span>
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
