@@ -4,48 +4,19 @@ import {
   CandlestickSeries,
   PriceLine,
 } from "lightweight-charts-react-components";
-import { CrosshairMode, LineStyle } from "lightweight-charts";
+import { LineStyle } from "lightweight-charts";
 import { useChartStore } from "../../stores/chartStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
+import {TIMEFRAMES, TIMEZONES, chartOptions, seriesOptions} from "../../commons/chartOption"
 
-const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"];
-
-const chartOptions = {
-  height: 600,
-  layout: {
-    background: { color: "transparent" },
-    textColor: "#d1d4dc",
-  },
-  grid: {
-    vertLines: { color: "rgba(42, 46, 57, 0.1)" },
-    horzLines: { color: "rgba(42, 46, 57, 0.1)" },
-  },
-  crosshair: {
-    mode: CrosshairMode.Normal,
-  },
-  rightPriceScale: {
-    borderColor: "rgba(197, 203, 206, 0.1)",
-  },
-  timeScale: {
-    borderColor: "rgba(197, 203, 206, 0.1)",
-    timeVisible: true,
-    secondsVisible: false,
-  },
-};
-
-const seriesOptions = {
-  upColor: "#26a69a",
-  downColor: "#ef5350",
-  borderVisible: false,
-  wickUpColor: "#26a69a",
-  wickDownColor: "#ef5350",
-};
 
 export default function BinanceChart() {
   const {
     data,
     timeframe,
     setTimeframe,
+    timezone,
+    setTimezone,
     position,
     entryPrice,
     stopLoss,
@@ -59,10 +30,12 @@ export default function BinanceChart() {
     updateLastCandle,
   } = useChartStore();
 
+  const timezoneOffset = TIMEZONES.find(tz => tz.label === timezone)?.offset || 0;
+
   // 📥 Load historical data
   useEffect(() => {
     loadHistoricalData();
-  }, [timeframe, loadHistoricalData]);
+  }, [timeframe, timezone, loadHistoricalData]);
 
   // 🔌 WebSocket live updates
   useEffect(() => {
@@ -74,7 +47,7 @@ export default function BinanceChart() {
       const k = message.k;
 
       const candle = {
-        time: k.t / 1000,
+        time: (k.t / 1000) + timezoneOffset,
         open: +k.o,
         high: +k.h,
         low: +k.l,
@@ -85,7 +58,7 @@ export default function BinanceChart() {
     };
 
     return () => ws.close();
-  }, [assetName,timeframe, updateLastCandle]);
+  }, [assetName,timeframe, timezoneOffset, updateLastCandle]);
 
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
@@ -97,7 +70,7 @@ export default function BinanceChart() {
         zIndex: 10,
         display: "flex",
         gap: "5px",
-        background: "rgba(20, 20, 20, 0.8)",
+        background: "rgba(20, 20, 20)",
         padding: "5px",
         borderRadius: "4px",
         border: "1px solid rgba(255,255,255,0.1)",
@@ -123,16 +96,52 @@ export default function BinanceChart() {
         ))}
       </div>
 
+      {/* Timezone Selector Overlay (Bottom Right) */}
+      <div style={{
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        zIndex: 10,
+        background: "#1a1a1a",
+        padding: "0 10px",
+        height: "26px", // Typical height of the time bar area
+        display: "flex",
+        alignItems: "center",
+        // borderTop: "1px solid rgba(255,255,255,0.1)",
+        // borderLeft: "1px solid rgba(255,255,255,0.1)",
+      }}>
+        <select 
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          style={{
+            background: "transparent",
+            color: "#d1d4dc",
+            border: "none",
+            fontSize: "11px",
+            outline: "none",
+            cursor: "pointer",
+            fontWeight: "bold",
+            paddingRight: "5px"
+          }}
+        >
+          {TIMEZONES.map(tz => (
+            <option key={tz.label} value={tz.label} style={{ background: "#1e222d" }}>
+              {tz.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Position Controls Overlay */}
       <div style={{
         position: "absolute",
-        top: 10,
-        left: 10,
+        top: 20,
+        left: 30,
         zIndex: 10,
         display: "flex",
         flexDirection: "column",
         gap: "10px",
-        background: "rgba(20, 20, 20, 0.8)",
+        background: "rgba(20, 20, 20, 0.95)",
         padding: "15px",
         borderRadius: "8px",
         border: "1px solid rgba(255,255,255,0.1)",
@@ -218,10 +227,10 @@ export default function BinanceChart() {
               price={Number(entryPrice)}
               options={{
                 title: position === "long" ? "ENTRY LONG" : "ENTRY SHORT",
-                color: "#7E89AC",
-                lineWidth: 2,
+                color: "white",
+                lineWidth: 1,
                 axisLabelVisible: true,
-                lineStyle: LineStyle.LargeDashed,
+                lineStyle: LineStyle.Solid,
               }}
             />
           )}

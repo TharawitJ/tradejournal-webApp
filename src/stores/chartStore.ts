@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { fetchHistoricalData } from "../api/apiChart";
+import { TIMEZONES } from "../commons/chartOption";
 
 interface ChartData {
   time: number;
@@ -18,6 +19,7 @@ interface ChartState {
   stopLoss: number | "";
   takeProfit: number | "";
   assetName: string;
+  timezone: string;
 
   // Extra Price Lines State
   maxPrice: number | null;
@@ -31,6 +33,7 @@ interface ChartState {
   updateLastCandle: (candle: ChartData) => void;
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
+  setTimezone: (tz: string) => void;
   setPosition: (pos: "long" | "short" | null) => void;
   setAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
@@ -73,6 +76,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
   stopLoss: "",
   takeProfit: "",
   assetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
+  timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
   maxPrice: null,
   minPrice: null,
@@ -124,6 +128,10 @@ export const useChartStore = create<ChartState>((set, get) => ({
     localStorage.setItem("selectedTimeframe", tf);
     set({ timeframe: tf });
   },
+  setTimezone: (tz) => {
+    localStorage.setItem("selectedTimezone", tz);
+    set({ timezone: tz });
+  },
   setPosition: (pos) => set({ position: pos }),
   setAssetName: (asset) => {
     localStorage.setItem("selectedAsset", asset);
@@ -162,10 +170,18 @@ export const useChartStore = create<ChartState>((set, get) => ({
   },
 
   loadHistoricalData: async () => {
-    const { assetName, timeframe } = get();
+    const { assetName, timeframe, timezone } = get();
     set({ data: [] });
     const formattedData = await fetchHistoricalData(assetName, timeframe);
-    get().setData(formattedData);
+    
+    // Apply timezone offset
+    const offset = TIMEZONES.find(tz => tz.label === timezone)?.offset || 0;
+    const adjustedData = formattedData.map(d => ({
+      ...d,
+      time: d.time + offset
+    }));
+
+    get().setData(adjustedData);
   },
 
   setShowMaxLine: (show) => set({ showMaxLine: show }),

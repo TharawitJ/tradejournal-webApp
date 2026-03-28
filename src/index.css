@@ -6,3 +6,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
 }
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

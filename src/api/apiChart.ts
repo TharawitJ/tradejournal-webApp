@@ -1,7 +1,7 @@
 
 
 export const fetchHistoricalData = async (assetName:string ,interval: string) => {
-  const REST_URL = `https://api.binance.com/api/v3/klines?symbol=${assetName}&interval=${interval}&limit=50000`;
+  const REST_URL = `https://api.binance.com/api/v3/klines?symbol=${assetName}&interval=${interval}&limit=5000000`;
   const response = await fetch(REST_URL);
   const raw = await response.json();
   

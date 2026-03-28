@@ -12,6 +12,8 @@ export interface JournalEntry {
   notes?: string;
   status: "open" | "closed";
   pnl?: number;
+  entryModel?: string;
+  entryDateTime?: string;
 }
 
 interface JournalState {

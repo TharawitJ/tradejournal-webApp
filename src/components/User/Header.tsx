@@ -54,17 +54,12 @@ function Header() {
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#201f1f] border border-[#494847]/20 flex items-center justify-center overflow-hidden">
-                <span className="material-symbols-outlined text-[#adaaaa] text-sm">
-                  person
-                </span>
-              </div>
               <span className="font-label text-sm text-[#ffffff]">
                 Trader_0x1
               </span>
             </div>
-            <button className="flex items-center gap-2 text-[#adaaaa] hover:text-white transition-colors font-body text-sm group">
-              <span className="material-symbols-outlined text-lg group-active:scale-95 transition-transform">
+            <button className="flex items-center gap-2 text-[#adaaaa] hover:text-white transition-colors font-body group">
+              <span className="material-symbols-outlined text-[0.95rem] mr-3 group-active:scale-95 transition-transform">
                 Logout
               </span>
             </button>
@@ -73,7 +68,7 @@ function Header() {
         {/* Layer 2: Navigation */}
         <div className="bg-[#0e0e0e] w-full">
           <nav className="flex items-center gap-8 px-6 h-14 max-w-screen-2xl mx-auto font-body text-sm">
-            <NavLink to="/home" className={navLinkClass}>
+            <NavLink to="/" className={navLinkClass}>
               Home
             </NavLink>
             <NavLink to="/chart" className={navLinkClass}>

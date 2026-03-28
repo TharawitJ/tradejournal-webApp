@@ -8,6 +8,10 @@ import { getBinanceWSUrl } from "../../api/apiChart";
 const AssetChartStockView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
+  const [entryModel, setEntryModel] = useState("Breakout");
+  const [entryDateTime, setEntryDateTime] = useState(
+    new Date().toISOString().slice(0, 16)
+  );
 
   const {
     position,
@@ -44,6 +48,8 @@ const AssetChartStockView: React.FC = () => {
       takeProfit: Number(takeProfit),
       rrRatio: calculateRR(),
       notes,
+      entryModel,
+      entryDateTime,
     };
 
     console.log("Saving Journal Entry:", tradeData);
@@ -51,6 +57,8 @@ const AssetChartStockView: React.FC = () => {
     addEntry(tradeData);
     setIsModalOpen(false);
     setNotes("");
+    setEntryModel("Breakout");
+    setEntryDateTime(new Date().toISOString().slice(0, 16));
     alert("Journal recorded successfully!");
   };
 
@@ -203,6 +211,39 @@ const AssetChartStockView: React.FC = () => {
                   <p className="text-sm font-medium text-[#26a69a]">
                     {takeProfit}
                   </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
+                    Entry Model
+                  </label>
+                  <div className="border bg-[#0e0e0e] border-white/10 rounded-lg flex " >
+                  <select
+                    value={entryModel}
+                    onChange={(e) => setEntryModel(e.target.value)}
+                    className="w-[90%] mx-auto bg-[#0e0e0e]  p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
+                  >
+                    <option value="Breakout">Breakout</option>
+                    <option value="Retest">Retest</option>
+                    <option value="Trend Continuation">Trend Continuation</option>
+                    <option value="Reversal">Reversal</option>
+                    <option value="Scalp">Scalp</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
+                    Entry Date time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={entryDateTime}
+                    onChange={(e) => setEntryDateTime(e.target.value)}
+                    className="w-full bg-[#0e0e0e] border border-white/10 rounded-lg p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
+                  />
                 </div>
               </div>
 
