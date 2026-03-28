@@ -103,36 +103,53 @@ export default function BinanceChart() {
         right: 0,
         zIndex: 10,
         background: "#1a1a1a",
-        padding: "0 10px",
+        padding: "0 5px",
         height: "26px", // Typical height of the time bar area
         display: "flex",
         alignItems: "center",
         // borderTop: "1px solid rgba(255,255,255,0.1)",
         // borderLeft: "1px solid rgba(255,255,255,0.1)",
       }}>
-        <select 
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          style={{
-            background: "transparent",
-            color: "#d1d4dc",
-            border: "none",
+        <div style={{ position: "relative", display: "inline-block" }}>
+          {/* Hidden span to measure text width */}
+          <span style={{
+            visibility: "hidden",
+            whiteSpace: "pre",
             fontSize: "11px",
-            outline: "none",
-            cursor: "pointer",
             fontWeight: "bold",
-            paddingRight: "5px"
-          }}
-        >
-          {TIMEZONES.map(tz => (
-            <option key={tz.label} value={tz.label} style={{ background: "#1e222d" }}>
-              {tz.label}
-            </option>
-          ))}
-        </select>
-      </div>
+            padding: "0 10px", // space for select arrow/padding
+            display: "inline-block"
+          }}>
+            {timezone}
+          </span>
+          <select 
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "transparent",
+              color: "#d1d4dc",
+              border: "none",
+              fontSize: "11px",
+              outline: "none",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            {TIMEZONES.map(tz => (
+              <option key={tz.label} value={tz.label} style={{ background: "#1e222d" }}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+          </div>
+          </div>
 
-      {/* Position Controls Overlay */}
+          {/* Position Controls Overlay */}
       <div style={{
         position: "absolute",
         top: 20,
