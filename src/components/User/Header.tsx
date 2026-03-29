@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink } from "react-router";
+import useUserStore from "../../stores/userStore"
 
 function Header() {
+  const user = useUserStore((state) => state.user);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
-
+  const logout = useUserStore(state => state.logout)
+  
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -54,11 +57,11 @@ function Header() {
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <span className="font-label text-sm text-[#ffffff]">
-                Trader_0x1
-              </span>
+              <NavLink to="/profile" className="font-label text-sm text-[#ffffff] hover:text-[#9cff93] transition-colors">
+                {user?.username || "Trader_0x1"}
+              </NavLink>
             </div>
-            <button className="flex items-center gap-2 text-[#adaaaa] hover:text-white transition-colors font-body group">
+            <button className="flex items-center gap-2 text-[#adaaaa] hover:text-white transition-colors font-body group" onClick={logout}>
               <span className="material-symbols-outlined text-[0.95rem] mr-3 group-active:scale-95 transition-transform">
                 Logout
               </span>

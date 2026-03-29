@@ -1,224 +1,367 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
+import { useJournalStore } from "../../stores/journalStore";
+import type { JournalEntry } from "../../stores/journalStore";
+import { 
+  getAllJournal, 
+  updateJournal as updateJournalApi, 
+  deleteJournal as deleteJournalApi, 
+  createJournal as createJournalApi,
+  getDashboardRR,
+  getDashboardWinRate,
+  getDashboardPnL
+} from "../../api/apiMain";
+import { toast } from "react-toastify";
+import JournalCard from "../../components/journal/journal";
 
-/**
- * Journal_page Component
- * 
- * Following the "Quantitative Editorial" design system:
- * - Triple-font approach: Manrope (Headlines), Inter (Body), Space Grotesk (Data).
- * - "No-Line" Rule: Depth via surface tiers instead of borders.
- * - "Luminous Shadows": Soft, white-tinted halos for elevation.
- * - Intentional Asymmetry: Breaking rigid grids for a sophisticated feel.
- */
 const JournalPage: React.FC = () => {
+  const { entries, updateJournal, setEntries, deleteEntry } = useJournalStore();
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  
+  const [stats, setStats] = useState({
+    avgRR: 0,
+    winRate: 0,
+    totalPnL: 0
+  });
+
+  // Modal form state
+  const [form, setForm] = useState({
+    assetName: "",
+    side: "long" as "long" | "short",
+    entryPrice: "",
+    stopLoss: "",
+    takeProfit: "",
+    entryDateTime: "",
+    exitDateTime: "",
+    notes: "",
+    systemFeedback: "",
+    exitPrice: "",
+    entryModel: ""
+  });
+
+  const fetchJournals = async () => {
+    try {
+      const resp = await getAllJournal();
+      setEntries(resp.data);
+    } catch (err) {
+      console.error("Failed to get journals", err);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const [rrResp, winResp, pnlResp] = await Promise.all([
+        getDashboardRR(),
+        getDashboardWinRate(),
+        getDashboardPnL()
+      ]);
+      
+      setStats({
+        avgRR: rrResp.data.AverageRR || 0,
+        winRate: winResp.data.winrate || 0,
+        totalPnL: pnlResp.data.result?.reduce((acc: number, curr: any) => acc + (curr.profitPosition || 0), 0) || 0
+      });
+    } catch (err) {
+      console.error("Failed to fetch dashboard stats", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchJournals();
+    fetchStats();
+  }, []);
+
+  const calculateRR = (entry: JournalEntry) => {
+    const risk = Math.abs(entry.entryPrice - entry.stopLoss);
+    const reward = Math.abs(entry.entryPrice - entry.takeProfit);
+    if (risk === 0) return "0";
+    return (reward / risk).toFixed(1);
+  };
+
+  const calculatePercent = (price: number, entryPrice: number, side: "long" | "short") => {
+    if (entryPrice === 0) return 0;
+    const diff = price - entryPrice;
+    const percent = (diff / entryPrice) * 100;
+    return side === "long" ? percent : -percent;
+  };
+
+  const calculatePnL = (entry: JournalEntry) => {
+    if (!entry.exitPrice || entry.result === "none") return null;
+    return calculatePercent(entry.exitPrice, entry.entryPrice, entry.side);
+  };
+
+  const handleEditClick = (entry: JournalEntry) => {
+    setEditingEntry(entry);
+    setForm({
+      assetName: entry.assetName,
+      side: entry.side,
+      entryPrice: entry.entryPrice.toString(),
+      stopLoss: entry.stopLoss.toString(),
+      takeProfit: entry.takeProfit.toString(),
+      entryDateTime: entry.entryDateTime || "",
+      exitDateTime: entry.exitDateTime || "",
+      notes: entry.notes || "",
+      systemFeedback: entry.systemFeedback || "",
+      exitPrice: entry.exitPrice?.toString() || "",
+      entryModel: entry.entryModel || ""
+    });
+  };
+
+  const handleAddClick = () => {
+    setIsAdding(true);
+    setForm({
+      assetName: "",
+      side: "long",
+      entryPrice: "",
+      stopLoss: "",
+      takeProfit: "",
+      entryDateTime: new Date().toISOString().slice(0, 16).replace("T", " "),
+      exitDateTime: "",
+      notes: "",
+      systemFeedback: "",
+      exitPrice: "",
+      entryModel: ""
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      const data = {
+        assetName: form.assetName,
+        side: form.side,
+        entryPrice: parseFloat(form.entryPrice),
+        stopLoss: parseFloat(form.stopLoss),
+        takeProfit: parseFloat(form.takeProfit),
+        entryDateTime: form.entryDateTime,
+        exitDateTime: form.exitDateTime || undefined,
+        notes: form.notes,
+        systemFeedback: form.systemFeedback,
+        exitPrice: form.exitPrice ? parseFloat(form.exitPrice) : undefined,
+        entryModel: form.entryModel
+      };
+
+      if (editingEntry) {
+        const id = editingEntry.id || (editingEntry as any)._id;
+        const resp = await updateJournalApi(id, data);
+        updateJournal(id, resp.data.journal || data);
+        toast.success("Trade updated successfully");
+        setEditingEntry(null);
+      } else {
+        const resp = await createJournalApi(data);
+        fetchJournals(); // Refresh list
+        toast.success("Trade added successfully");
+        setIsAdding(false);
+      }
+      fetchStats(); // Update stats
+    } catch (err) {
+      toast.error(editingEntry ? "Failed to update trade" : "Failed to add trade");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this trade?")) {
+      try {
+        await deleteJournalApi(id);
+        deleteEntry(id);
+        toast.success("Trade deleted");
+        fetchStats();
+      } catch (err) {
+        toast.error("Failed to delete trade");
+      }
+    }
+  };
+
+  const handleToggleResult = async (id: string) => {
+    const entry = entries.find(e => (e.id === id || (e as any)._id === id));
+    if (!entry) return;
+    
+    let nextResult: "win" | "loss" | "none" = "none";
+    if (entry.result === "none") nextResult = "win";
+    else if (entry.result === "win") nextResult = "loss";
+    else nextResult = "none";
+
+    try {
+      await updateJournalApi(id, { result: nextResult });
+      updateJournal(id, { result: nextResult });
+      fetchStats();
+    } catch (err) {
+      toast.error("Failed to update result");
+    }
+  };
+
   return (
     <div className="bg-[#0e0e0e] text-[#ffffff] font-body selection:bg-[#9cff93] selection:text-[#006413] min-h-screen">
-      <main className="max-w-screen-2xl mx-auto px-6 py-12">
-        {/* Journal Header Section - Intentional Asymmetry */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
+      <main className="max-w-screen-2xl mx-auto px-6 pt-6 pb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8">
           <div className="max-w-2xl">
-            <h1 className="font-headline font-bold text-5xl md:text-7xl tracking-tight mb-4 uppercase">
+            <h1 className="font-headline font-bold text-2xl tracking-tight mb-2 uppercase">
               Trade Journal
             </h1>
-            <p className="font-label text-[#adaaaa] text-lg tracking-widest uppercase">
-              Institutional precision / historical logs
+            <p className="text-[#adaaaa] text-sm font-label uppercase tracking-widest">
+              Documenting the journey to mastery
             </p>
           </div>
-          <button className="bg-gradient-to-br from-[#9cff93] to-[#00fc40] hover:brightness-110 text-[#006413] font-label font-bold px-10 py-4 rounded-lg flex items-center gap-3 transition-all active:scale-95 shadow-[0_0_32px_rgba(255,255,255,0.04)] uppercase tracking-widest text-sm">
+          <button 
+            onClick={handleAddClick}
+            className="bg-[#9cff93] text-[#006413] px-8 py-3 rounded-full font-label font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2"
+          >
             <span className="material-symbols-outlined">add</span>
-            New Entry
+            New Trade
           </button>
         </div>
 
-        {/* Trade Entries List */}
-        <div className="space-y-24">
-          {/* Entry 1: Win Example */}
-          <div className="flex flex-col xl:flex-row gap-8 items-stretch group border-2 border-gray-800 rounded-3xl p-3">
-            {/* ZONE 1: CORE DATA (Left) - Surface Tier Stacking */}
-            <div className="w-full xl:w-1/4 bg-[#131313] p-8 rounded-xl border border-transparent group-hover:border-[#9cff93]/20 transition-all shadow-[0_0_32px_rgba(255,255,255,0.04)]">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#9cff93] mb-2 block">Tier 1 Setup</span>
-                  <h3 className="font-headline font-extrabold text-3xl text-white tracking-tighter">EURUSD</h3>
-                </div>
-                <span className="bg-[#006c47] text-[#e1ffeb] px-4 py-1.5 rounded-full font-label text-[10px] font-bold uppercase tracking-widest">Breakout</span>
-              </div>
+        <div className="space-y-12">
+          {entries.length > 0 ? (
+            entries.map((entry) => (
+              <JournalCard 
+                key={entry.id || (entry as any)._id}
+                entry={entry}
+                calculatePercent={calculatePercent}
+                calculatePnL={calculatePnL}
+                calculateRR={calculateRR}
+                handleToggleResult={handleToggleResult}
+                handleEditClick={handleEditClick}
+                handleDelete={handleDelete}
+              />
+            ))
+          ) : (
+            <div className="text-center py-32 border-2 border-dashed border-gray-800 rounded-3xl">
+              <p className="text-[#adaaaa] font-label uppercase tracking-widest">No trades recorded yet</p>
+            </div>
+          )}
+        </div>
+
+        {/* Modal (Add/Edit) */}
+        {(editingEntry || isAdding) && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+            <div className="bg-[#131313] border-2 border-gray-800 rounded-3xl p-8 max-w-2xl w-full shadow-[0_0_64px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <h2 className="text-2xl font-headline font-bold mb-6 uppercase tracking-tight">
+                {editingEntry ? "Edit Trade Details" : "Add New Trade"}
+              </h2>
               
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="md:col-span-2 grid grid-cols-2 gap-6">
                   <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">Entry Price</p>
-                    <p className="font-label text-base text-white font-bold">1.08450</p>
+                    <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Asset Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. BTCUSDT"
+                      value={form.assetName}
+                      onChange={(e) => setForm({...form, assetName: e.target.value})}
+                      className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
+                    />
                   </div>
                   <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">Exit Price</p>
-                    <p className="font-label text-base text-white font-bold">1.09200</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">SL / TP</p>
-                    <div className="font-label text-xs">
-                      <span className="text-[#ff716c] font-bold">1.08200</span>
-                      <span className="text-[#adaaaa] mx-2">/</span>
-                      <span className="text-[#00ec3b] font-bold">1.09500</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">Duration</p>
-                    <p className="font-label text-xs text-white">4h 12m</p>
+                    <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Side</label>
+                    <select 
+                      value={form.side}
+                      onChange={(e) => setForm({...form, side: e.target.value as "long" | "short"})}
+                      className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all appearance-none"
+                    >
+                      <option value="long">LONG</option>
+                      <option value="short">SHORT</option>
+                    </select>
                   </div>
                 </div>
-                
-                <div className="pt-6 border-t border-[#494847]/10">
-                  <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-2">Timeline</p>
-                  <p className="font-label text-[11px] text-white/90 tracking-wide">2023.10.24 09:15 → 13:27</p>
-                </div>
-              </div>
-            </div>
 
-            {/* ZONE 2: ADV/DISADV - Middle-Left */}
-            <div className="w-full xl:w-1/4 bg-[#1a1919] p-8 rounded-xl flex flex-col gap-8">
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="material-symbols-outlined text-[#9cff93] text-lg">check_circle</span>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#adaaaa] font-bold">Advantages</span>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Entry Price</label>
+                  <input 
+                    type="number" 
+                    step="0.00001"
+                    value={form.entryPrice}
+                    onChange={(e) => setForm({...form, entryPrice: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
+                  />
                 </div>
-                <ul className="space-y-3 font-body text-sm text-white/70">
-                  <li className="flex items-start gap-3 leading-relaxed">
-                    <span className="text-[#9cff93] mt-1">•</span> Perfect alignment with 4H trend
-                  </li>
-                  <li className="flex items-start gap-3 leading-relaxed">
-                    <span className="text-[#9cff93] mt-1">•</span> High volume confirmation on entry
-                  </li>
-                </ul>
-              </div>
-              <div className="mt-auto">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="material-symbols-outlined text-[#ff716c] text-lg">cancel</span>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#adaaaa] font-bold">Disadvantages</span>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Exit Price</label>
+                  <input 
+                    type="number" 
+                    step="0.00001"
+                    value={form.exitPrice}
+                    onChange={(e) => setForm({...form, exitPrice: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
+                  />
                 </div>
-                <ul className="space-y-3 font-body text-sm text-white/70">
-                  <li className="flex items-start gap-3 leading-relaxed">
-                    <span className="text-[#ff716c] mt-1">•</span> SL was slightly too tight
-                  </li>
-                </ul>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Stop Loss</label>
+                  <input 
+                    type="number" 
+                    step="0.00001"
+                    value={form.stopLoss}
+                    onChange={(e) => setForm({...form, stopLoss: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#ff716c] outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Take Profit</label>
+                  <input 
+                    type="number" 
+                    step="0.00001"
+                    value={form.takeProfit}
+                    onChange={(e) => setForm({...form, takeProfit: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#00fc40] outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Entry Date/Time</label>
+                  <input 
+                    type="text" 
+                    placeholder="YYYY.MM.DD HH:MM"
+                    value={form.entryDateTime}
+                    onChange={(e) => setForm({...form, entryDateTime: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Entry Model</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. MSS / FVG"
+                    value={form.entryModel}
+                    onChange={(e) => setForm({...form, entryModel: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">Notes & Reflection</label>
+                  <textarea 
+                    rows={3}
+                    value={form.notes}
+                    onChange={(e) => setForm({...form, notes: e.target.value})}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-body focus:border-[#9cff93] outline-none transition-all resize-none"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* ZONE 3: NOTES - Middle-Right (Wide Margin) */}
-            <div className="w-full xl:flex-1 bg-[#1a1919] p-8 rounded-xl flex flex-col justify-between">
-              <div>
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#adaaaa] font-bold mb-6 block">Notes & Reflection</span>
-                <p className="font-body text-base leading-8 text-white/90 italic border-l-2 border-[#9cff93]/10 pl-6">
-                  Entry was executed exactly as per the Tier 1 playbook. Price showed strong rejection at the psychological 1.084 level before accelerating. Exited manually when momentum slowed near the session close.
-                </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    setEditingEntry(null);
+                    setIsAdding(false);
+                  }}
+                  className="flex-1 py-4 rounded-xl font-label font-bold uppercase tracking-widest text-sm bg-[#201f1f] hover:bg-[#262626] text-[#adaaaa] transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave}
+                  className="flex-1 py-4 rounded-xl font-label font-bold uppercase tracking-widest text-sm bg-gradient-to-br from-[#9cff93] to-[#00fc40] text-[#006413] hover:brightness-110 transition-all"
+                >
+                  {editingEntry ? "Save Changes" : "Create Trade"}
+                </button>
               </div>
-              <div className="mt-12 pt-6 border-t border-[#494847]/10">
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#9cff93] font-bold mb-2 block">System Feedback</span>
-                <p className="font-body text-xs text-[#adaaaa] tracking-wide">Execution: A+ | Discipline: High. Ensure next time you hold until TP if HTF targets remain valid.</p>
-              </div>
-            </div>
-
-            {/* ZONE 4: ACTIONS - Right Column */}
-            <div className="w-full xl:w-48 flex xl:flex-col gap-4">
-              <button className="flex-1 bg-[#9cff93]/5 hover:bg-[#9cff93]/10 text-[#9cff93] font-label text-[10px] font-bold py-5 rounded-lg transition-all border border-[#9cff93]/20 flex flex-col items-center justify-center gap-2 group uppercase tracking-widest">
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
-                Win
-              </button>
-              <button className="flex-1 bg-[#201f1f] hover:bg-[#262626] text-white font-label text-[10px] font-bold py-5 rounded-lg transition-all flex flex-col items-center justify-center gap-2 uppercase tracking-widest">
-                <span className="material-symbols-outlined text-2xl">edit</span>
-                Edit
-              </button>
-              <button className="flex-1 bg-[#201f1f] hover:bg-[#ff716c]/10 hover:text-[#ff716c] text-[#adaaaa] font-label text-[10px] font-bold py-5 rounded-lg transition-all flex flex-col items-center justify-center gap-2 uppercase tracking-widest">
-                <span className="material-symbols-outlined text-2xl">delete</span>
-                Delete
-              </button>
             </div>
           </div>
+        )}
 
-          {/* Entry 2: Loss Example (Asymmetric Shift)
-          <div className="flex flex-col xl:flex-row gap-8 items-stretch group opacity-90 hover:opacity-100 transition-opacity">
-            <div className="w-full xl:w-1/4 bg-[#131313] p-8 rounded-xl border border-transparent group-hover:border-[#ff716c]/20 transition-all shadow-[0_0_32px_rgba(255,255,255,0.04)]">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2 block">Tier 3 Setup</span>
-                  <h3 className="font-headline font-extrabold text-3xl text-white tracking-tighter">XAUUSD</h3>
-                </div>
-                <span className="bg-[#262626] text-white px-4 py-1.5 rounded-full font-label text-[10px] font-bold uppercase tracking-widest">Reversal</span>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">Entry Price</p>
-                    <p className="font-label text-base text-white font-bold">1982.40</p>
-                  </div>
-                  <div>
-                    <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-1">Exit Price</p>
-                    <p className="font-label text-base text-white font-bold">1975.00</p>
-                  </div>
-                </div>
-                
-                <div className="pt-6 border-t border-[#494847]/10">
-                  <p className="font-label text-[10px] text-[#adaaaa] uppercase tracking-tighter mb-2">System Result</p>
-                  <p className="font-label text-xl text-[#ff716c] font-bold tracking-tight">-$740.00</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="w-full xl:flex-1 bg-[#1a1919] p-8 rounded-xl flex flex-col justify-between">
-              <div>
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#adaaaa] font-bold mb-6 block">Notes & Reflection</span>
-                <p className="font-body text-base leading-8 text-white/90 italic border-l-2 border-[#ff716c]/10 pl-6">
-                  Impulsive entry. I saw the drop and tried to catch it midway. Market immediately reversed to fill the imbalance above. Stop loss hit within minutes. Poor emotional control.
-                </p>
-              </div>
-              <div className="mt-12 pt-6 border-t border-[#494847]/10">
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-[#ff716c] font-bold mb-2 block">System Feedback</span>
-                <p className="font-body text-xs text-[#adaaaa] tracking-wide">Execution: D | Discipline: Low. Avoid trading when not at desk for full session open.</p>
-              </div>
-            </div>
-
-            <div className="w-full xl:w-48 flex xl:flex-col gap-4">
-              <button className="flex-1 bg-[#ff716c]/5 hover:bg-[#ff716c]/10 text-[#ff716c] font-label text-[10px] font-bold py-5 rounded-lg transition-all border border-[#ff716c]/20 flex flex-col items-center justify-center gap-2 group uppercase tracking-widest">
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>heart_broken</span>
-                Loss
-              </button>
-              <button className="flex-1 bg-[#201f1f] hover:bg-[#262626] text-white font-label text-[10px] font-bold py-5 rounded-lg transition-all flex flex-col items-center justify-center gap-2 uppercase tracking-widest">
-                <span className="material-symbols-outlined text-2xl">edit</span>
-                Edit
-              </button>
-            </div>
-          </div>*/}
-        </div> 
-
-        {/* Pagination / Footer Area */}
         <div className="mt-32 flex flex-col md:flex-row justify-between items-center gap-8 border-t border-[#494847]/10 pt-12">
-          <span className="font-label text-xs text-[#adaaaa] uppercase tracking-[0.2em]">Showing 3 of 124 recorded trades</span>
-          <div className="flex gap-3">
-            <button className="w-12 h-12 rounded-lg bg-[#131313] flex items-center justify-center text-[#adaaaa] hover:text-[#9cff93] transition-colors group">
-              <span className="material-symbols-outlined group-active:scale-90 transition-transform">chevron_left</span>
-            </button>
-            <button className="w-12 h-12 rounded-lg bg-[#262626] border border-[#9cff93]/40 flex items-center justify-center text-[#9cff93] font-bold font-label text-sm">
-              1
-            </button>
-            <button className="w-12 h-12 rounded-lg bg-[#131313] flex items-center justify-center text-[#adaaaa] hover:text-[#9cff93] transition-colors">
-              2
-            </button>
-            <button className="w-12 h-12 rounded-lg bg-[#131313] flex items-center justify-center text-[#adaaaa] hover:text-[#9cff93] transition-colors group">
-              <span className="material-symbols-outlined group-active:scale-90 transition-transform">chevron_right</span>
-            </button>
-          </div>
+          <span className="font-label text-xs text-[#adaaaa] uppercase tracking-[0.2em]">
+            Showing {entries.length} recorded trades
+          </span>
         </div>
       </main>
-
-      {/* Floating Menu for Mobile Precision */}
-      <div className="fixed bottom-8 right-8 z-50 md:hidden">
-        <button className="w-16 h-16 bg-[#9cff93] rounded-full shadow-[0_0_32px_rgba(156,255,147,0.2)] flex items-center justify-center text-[#006413] active:scale-90 transition-all">
-          <span className="material-symbols-outlined text-2xl">menu</span>
-        </button>
-      </div>
     </div>
   );
 };

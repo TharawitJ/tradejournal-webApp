@@ -6,9 +6,7 @@ const RegisterScreen = lazy(() => import("../pages/guest/register_screen"));
 const ResetPassword2 = lazy(() => import("../pages/guest/reset_password"));
 const AccountRecovery = lazy(() => import("../pages/guest/account_recovery"));
 const JournalPage = lazy(() => import("../pages/user/Journal_page"));
-// const AssetChartStockView = lazy(
-// () => import("../pages/user/asset_chart_stock_view"),
-// );
+const ProfilePage = lazy(() => import("../pages/user/profile"));
 import AssetChartStockView from "../pages/user/asset_chart_stock_view";
 const FullPerformanceDashboard = lazy(
   () => import("../pages/user/full_performance_dashboard"),
@@ -17,16 +15,7 @@ const UpdatedSummaryDashboard = lazy(
   () => import("../pages/user/updated_summary_dashboard"),
 );
 import UserLayout from "../layouts/UserRouterLayout";
-
-// const testRouter = createBrowserRouter([
-//   { path: "/", Component: LoginScreen },
-//   { path: "1", Component: RegisterScreen },
-//   { path: "/2", Component: ResetPassword2 },
-//   { path: "/3", Component: AssetChartStockView },
-//   { path: "/4", Component: AccountRecovery },
-//   { path: "/5", Component: FullPerformanceDashboard },
-//   { path: "/6", Component: UpdatedSummaryDashboard },
-// ]);
+import useUserStore from "../stores/userStore"
 
 const guestRouter = createBrowserRouter([
   { path: "/", Component: LoginScreen },
@@ -45,29 +34,22 @@ const userRouter = createBrowserRouter([
       { path: "chart", Component: AssetChartStockView },
       { path: "dashboard", Component: FullPerformanceDashboard },
       { path: "journal", Component: JournalPage },
+      { path: "profile", Component: ProfilePage },
       { path: "*", element: <Navigate to="/" /> },
     ],
   },
 ]);
 
 function AppRouter() {
-  // set state user
-  // const finalRouter = user ? userRouter : guestRouter
+  const user = useUserStore(state => state.user)
+  const finalRouter = user ? userRouter : guestRouter
   return (
     <Suspense
       fallback={<span className="loading loading-dots loading-xl"></span>}
     >
-      {<RouterProvider router={userRouter}></RouterProvider>}
+      {<RouterProvider router={finalRouter}></RouterProvider>}
     </Suspense>
   );
 }
 
 export default AppRouter;
-
-// root login
-// Register
-// Reset password
-// login successful
-// Chart :  index + chart add journal
-// Journal : index + Journal : Edit
-// Dashboard

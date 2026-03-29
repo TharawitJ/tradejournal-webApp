@@ -1,0 +1,55 @@
+import useUserStore from '../stores/userStore'
+import axios from 'axios'
+
+export const mainApi = axios.create({
+  baseURL : 'http://localhost:3500/',
+  headers : {
+    'Content-Type' : 'application/json'
+  }
+})
+mainApi.interceptors.request.use( config => {
+  const token = useUserStore.getState().token
+  if(token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const apiRegister = async (body:any) => {
+  return await mainApi.post('/register', body)
+}
+
+export const getUserProfile = () => mainApi.get('/user/profile')
+export const updateUserProfile = (body:any) => mainApi.patch(`/user/profile`, body)
+export const deleteUserProfile = () => mainApi.delete(`/user/profile`)
+
+export const createJournal = (body:any) => mainApi.post('/journal', body)
+export const getAllJournal = () => mainApi.get('/journal')
+export const updateJournal = (id:string, body:any) => mainApi.patch(`/journal/${id}`, body)
+export const deleteJournal = (id:string) => mainApi.delete(`/journal/${id}`)
+
+// export const getDashboard = ()=>mainApi.get(`/dashboard`)
+export const getDashboardRR = () => mainApi.get('/dashboard/riskreward')
+// result {
+//   "AverageRR": 3.4109389934283847
+// }
+export const getDashboardWinRate = () => mainApi.get('/dashboard/winrate')
+// result will be number you need to add % after number and show to UI as a percentage {
+//   "winrate": 100
+// }
+export const getDashboardPnL = () => mainApi.get('/dashboard/pnl')
+// result example if winLose === "WIN"||"LOSE" the backend will cal profit and update data
+  // "result": [
+  //   {
+  //     "duration": null,
+  //     "slPercent": 0.009999999999999933,
+  //     "tpPercent": 0.05000000000000006,
+  //     "profitPosition": null,
+  //     "winLose": null
+  //   },{
+  //     "duration": null,
+  //     "slPercent": 0.8681346910437399,
+  //     "tpPercent": 0.8918759902444234,
+  //     "profitPosition": null,
+  //     "winLose": null
+  //   },]

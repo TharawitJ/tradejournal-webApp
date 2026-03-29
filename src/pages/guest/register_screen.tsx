@@ -1,5 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router';
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { registerSchema } from "../../validations/user.schema.ts"
+// import axios from "axios"
+import { Flip, toast, ToastContainer, Zoom } from "react-toastify"
+import { apiRegister, mainApi } from "../../api/apiMain.ts"
+
 
 /**
  * RegisterScreen Component
@@ -11,13 +18,40 @@ import { NavLink } from 'react-router';
  * Note: This component uses custom Tailwind CSS colors, fonts, and gradients defined 
  * in the project's tailwind.config.js.
  */
+
 const RegisterScreen: React.FC = () => {
+    const { register, handleSubmit, formState, reset } = useForm({
+    resolver: zodResolver(registerSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      username: '', email: '', password: '', passwordConfirm: ''
+    }
+  })
+  const { errors, isSubmitting } = formState
+
+  const onSubmit = async (data,e) => {
+    e?.preventDefault()
+    console.log(data)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      const resp = await apiRegister(data)
+      toast.success(resp.data.message, { transition: Zoom, autoClose: 4000 })
+      reset()
+    } catch (err) {
+      console.dir(err)
+      const errMsg = err.response?.data.message || err.message
+      // alert(JSON.stringify(err,null,2))
+      toast.error(errMsg, {
+        transition: Zoom, autoClose: 3000, containerId: 'register-modal', position: 'top-center'
+      })
+    }
+  }
   return (
     <div className="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary min-h-screen flex flex-col relative overflow-hidden bg-[#0e0e0e] text-[#ffffff]">
       {/* Background Grain/Texture (Subtle tonal shift) */}
       <div className="absolute inset-0 bg-surface-container-lowest opacity-40 z-0 pointer-events-none"></div>
 
-      <main className="flex-grow flex items-center justify-center px-6 py-12 relative z-10">
+      <main className="flex-grow flex items-center justify-center px-6 py-12 relative z-10" >
         {/* Registration Canvas */}
         <div className="w-full max-w-[440px]">
           {/* Brand Anchor */}
@@ -33,14 +67,15 @@ const RegisterScreen: React.FC = () => {
               <p className="text-on-surface-variant text-sm mt-1">Join the elite network of disciplined traders.</p>
             </div>
 
-            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               {/* Full Name */}
               <div className="space-y-2">
-                <label className="font-label text-[0.75rem] uppercase tracking-widest text-on-surface-variant block">Full Name</label>
+                <label className="font-label text-[0.75rem] uppercase tracking-widest text-on-surface-variant block">Username</label>
                 <input 
                   className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface p-4 rounded focus:ring-1 focus:ring-primary/40 placeholder:text-outline-variant transition-all font-body text-sm" 
                   placeholder="ALEX RIVERA" 
                   type="text" 
+                  {...register('username')}
                 />
               </div>
 
@@ -51,6 +86,7 @@ const RegisterScreen: React.FC = () => {
                   className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface p-4 rounded focus:ring-1 focus:ring-primary/40 placeholder:text-outline-variant transition-all font-body text-sm" 
                   placeholder="TRADER@Trade Journal.IO" 
                   type="email" 
+                  {...register('email')}
                 />
               </div>
 
@@ -62,6 +98,7 @@ const RegisterScreen: React.FC = () => {
                     className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface p-4 rounded focus:ring-1 focus:ring-primary/40 placeholder:text-outline-variant transition-all font-body text-sm" 
                     placeholder="••••••••" 
                     type="password" 
+                    {...register('password')}
                   />
                 </div>
                 <div className="space-y-2">
@@ -70,6 +107,7 @@ const RegisterScreen: React.FC = () => {
                     className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface p-4 rounded focus:ring-1 focus:ring-primary/40 placeholder:text-outline-variant transition-all font-body text-sm" 
                     placeholder="••••••••" 
                     type="password" 
+                    {...register('passwordConfirm')}
                   />
                 </div>
               </div>

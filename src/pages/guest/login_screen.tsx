@@ -1,17 +1,34 @@
 import React from 'react';
 import { NavLink } from 'react-router';
+import useUserStore from '../../stores/userStore';
+// import RegisterForm from '@/components/RegisterForm'
+import { loginSchema } from '../../validations/user.schema'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { toast } from 'react-toastify'
 
-/**
- * LoginScreen Component
- * 
- * This component represents a login screen for the Trade Journal platform.
- * It features a centered login card with email and password fields, 
- * institutional branding, and a shared footer.
- * 
- * Note: This component uses custom Tailwind CSS colors, fonts, and gradients defined 
- * in the project's tailwind.config.js.
- */
 const LoginScreen: React.FC = () => {
+
+  // const user = useUserStore(state=>state.user)
+  const login = useUserStore(state=>state.login)
+  const { register, handleSubmit, formState, reset } = useForm({
+    resolver: zodResolver(loginSchema),
+    mode: 'onSubmit'
+  })
+  const { errors, isSubmitting, isValid } = formState
+
+  const onSubmit = async (body) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const resp = await login(body)
+      toast.success(resp.data.message)
+    } catch (err) {
+      console.dir(err)
+      const errMsg = err.response?.data.message || err.message
+      toast.error(errMsg)
+    }
+  }
+
   return (
     <div className="bg-[#0e0e0e] text-[#ffffff] font-body selection:bg-primary selection:text-on-primary min-h-screen flex flex-col relative overflow-hidden">
       {/* Asymmetric Background Elements (Intentional Asymmetry) */}
@@ -31,20 +48,19 @@ const LoginScreen: React.FC = () => {
           </div>
 
           <div className="bg-surface-container-high p-8 md:p-10 rounded-lg shadow-[0_0_32px_rgba(255,255,255,0.04)] border border-outline-variant/10">
-            <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
               {/* Email Field */}
               <div className="space-y-2">
-                <label className="font-label text-on-surface-variant text-[0.75rem] uppercase tracking-widest block px-1" htmlFor="email">
-                  Identity / Email
+                <label className="font-label text-on-surface-variant text-[0.75rem] uppercase tracking-widest block px-1" htmlFor="identity">
+                  Email or Username
                 </label>
                 <div className="relative">
                   <input 
                     className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface px-4 py-4 focus:ring-1 focus:ring-primary/40 transition-all font-body text-sm" 
-                    id="email" 
-                    name="email" 
-                    placeholder="name@firm.com" 
+                    id="identity" 
+                    placeholder="Email or Username" 
                     required 
-                    type="email" 
+                    {...register('identity')}
                   />
                 </div>
               </div>
@@ -53,17 +69,17 @@ const LoginScreen: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center px-1">
                   <label className="font-label text-on-surface-variant text-[0.75rem] uppercase tracking-widest block" htmlFor="password">
-                    Authentication / Password
+                    Password
                   </label>
                 </div>
                 <div className="relative">
                   <input 
                     className="w-full bg-surface-container-lowest border border-gray-700 text-on-surface px-4 py-4 focus:ring-1 focus:ring-primary/40 transition-all font-body text-sm" 
                     id="password" 
-                    name="password" 
                     placeholder="••••••••" 
                     required 
                     type="password" 
+                    {...register('password')}
                   />
                 </div>
                 <div className="flex justify-end pt-1">

@@ -109,11 +109,11 @@ const AssetChartStockView: React.FC = () => {
   return (
     <div className="bg-[#0e0e0e] text-[#ffffff] min-h-screen">
       <main className="pt-5 pb-12 px-6 max-w-screen-2xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-5 gap-6">
+        <div className="w-[93%] flex flex-col md:flex-row justify-between items-start md:items-end mb-5 gap-6 mx-auto">
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3 ">
-                <div className="bg-secondary-container px-3 py-1 rounded-full flex items-center gap-2">
+                <div className="bg-secondary-container pr-3 py-1 rounded-full flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#2962ff] animate-pulse"></span>
                   <span className="text-[10px] font-bold tracking-widest uppercase">
                     Live Market
