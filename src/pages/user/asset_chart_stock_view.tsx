@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
-import BinanceChart from "../../components/chart/Chart";
+import BinanceChart from "../../components/Chart/Chart";
 import useUserStore from "../../stores/userStore"
 import { useChartStore } from "../../stores/chartStore";
 import { useJournalStore } from "../../stores/journalStore";

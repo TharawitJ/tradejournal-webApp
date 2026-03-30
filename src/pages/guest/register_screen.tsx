@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router";
+import {useNavigate} from "react-router-dom"
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "../../validations/user.schema.ts";
@@ -30,6 +31,7 @@ const RegisterScreen: React.FC = () => {
     },
   });
   const { errors, isSubmitting } = formState;
+  const navigate = useNavigate();
 
   const onSubmit = async (data, e) => {
     e?.preventDefault();
@@ -41,9 +43,10 @@ const RegisterScreen: React.FC = () => {
         transition: Zoom,
         autoClose: 4000,
       });
-      reset();
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (err) {
-      s;
       console.dir(err);
       const errMsg = err.response?.data.message || err.message;
       // alert(JSON.stringify(err,null,2))
@@ -139,14 +142,14 @@ const RegisterScreen: React.FC = () => {
 
               {/* Terms Checkbox */}
               <div className="flex items-start gap-3 pt-2">
-                <div className="flex items-center h-5">
+                {/* <div className="flex items-center h-5">
                   <input
                     className="w-4 h-4 rounded bg-surface-container-lowest border-outline-variant/20 text-primary focus:ring-primary/40 focus:ring-offset-surface"
                     id="terms"
                     type="checkbox"
                   />
-                </div>
-                <label
+                </div> */}
+                {/* <label
                   className="text-[0.8rem] text-on-surface-variant leading-tight"
                   htmlFor="terms"
                 >
@@ -165,7 +168,7 @@ const RegisterScreen: React.FC = () => {
                     Privacy Policy
                   </a>
                   .
-                </label>
+                </label> */}
               </div>
 
               {/* Primary Action */}
