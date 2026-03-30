@@ -3,28 +3,30 @@ import type { JournalEntry } from "../../stores/journalStore";
 
 interface JournalCardProps {
   entry: JournalEntry;
-  calculatePercent: (price: number, entryPrice: number, side: "long" | "short") => number;
-  calculatePnL: (entry: JournalEntry) => number | null;
   calculateRR: (entry: JournalEntry) => string;
-  handleToggleResult: (id: string) => void;
+  handleToggleResult: (id: string | number) => void;
   handleEditClick: (entry: JournalEntry) => void;
-  handleDelete: (id: string) => void;
+  handleDelete: (id: string | number) => void;
 }
 
 const JournalCard: React.FC<JournalCardProps> = ({
   entry,
-  calculatePercent,
-  calculatePnL,
   calculateRR,
   handleToggleResult,
   handleEditClick,
   handleDelete,
 }) => {
-  const slPercent = calculatePercent(entry.stopLoss, entry.entryPrice, entry.side);
-  const tpPercent = calculatePercent(entry.takeProfit, entry.entryPrice, entry.side);
-  const pnl = calculatePnL(entry);
+  const calculatePercent = (price: number, entryPrice: number) => {
+    if (entryPrice === 0) return 0;
+    // Assuming 'side' logic if needed, but schema uses SL/TP directly
+    return ((price - entryPrice) / entryPrice) * 100;
+  };
+
+  const slPercent = calculatePercent(entry.SL, entry.entryPrice);
+  const tpPercent = calculatePercent(entry.TP, entry.entryPrice);
+  const pnl = entry.positionPnL ?? null;
   const rr = calculateRR(entry);
-  const id = entry.id || (entry as any)._id;
+  const id = entry.recordId || entry.id || (entry as any)._id;
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-stretch group border-2 border-gray-800 rounded-3xl p-3 hover:border-[#9cff93]/20 transition-all duration-300">
@@ -32,10 +34,10 @@ const JournalCard: React.FC<JournalCardProps> = ({
         <div className="flex justify-between items-start mb-8">
           <div>
             <span className="font-label text-[13px] uppercase tracking-[0.2em] text-[#9cff93] mb-2 block">
-              {entry.side === "long" ? "LONG" : "SHORT"} • {entry.entryModel || "N/A"}
+              {entry.setUpTier} • {entry.entryModel || `Model ${entry.entryModelId}`}
             </span>
             <h3 className="font-headline font-extrabold text-3xl text-white tracking-tighter">
-              {entry.assetName}
+              {entry.assetName || `Asset ${entry.assetId}`}
             </h3>
           </div>
           <div className="flex flex-col justify-center items-center gap-1">
@@ -66,10 +68,10 @@ const JournalCard: React.FC<JournalCardProps> = ({
             </div>
             <div>
               <p className="font-label text-[16px] text-[#adaaaa] uppercase tracking-tighter mb-1">
-                Exit Price
+                Margin
               </p>
               <p className="font-label text-base text-white font-bold">
-                {entry.exitPrice?.toFixed(5) || "-"}
+                {entry.margin.toFixed(2)}
               </p>
             </div>
           </div>
@@ -102,7 +104,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
                 {entry.entryDateTime || "-"} {entry.exitDateTime ? `→ ${entry.exitDateTime}` : ""}
               </p>
             </div>
-            <p className="font-label text-[11px] text-[#adaaaa]">{entry.duration || ""}</p>
+            <p className="font-label text-[11px] text-[#adaaaa]">{entry.duration ? `${entry.duration}m` : ""}</p>
           </div>
         </div>
       </div>
@@ -115,13 +117,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
               Advantages
             </span>
           </div>
-          <ul className="space-y-3 font-body text-sm text-white/70">
-            {entry.advantages?.map((adv, i) => (
-              <li key={i} className="flex items-start gap-3 leading-relaxed">
-                <span className="text-[#9cff93] mt-1">•</span> {adv}
-              </li>
-            )) || <li className="italic opacity-50">No advantages recorded</li>}
-          </ul>
+          <p className="font-body text-sm text-white/70 italic">
+            {entry.advantage || "No advantages recorded"}
+          </p>
         </div>
         <div className="mt-auto">
           <div className="flex items-center gap-3 mb-4">
@@ -130,13 +128,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
               Disadvantages
             </span>
           </div>
-          <ul className="space-y-3 font-body text-sm text-white/70">
-            {entry.disadvantages?.map((dis, i) => (
-              <li key={i} className="flex items-start gap-3 leading-relaxed">
-                <span className="text-[#ff716c] mt-1">•</span> {dis}
-              </li>
-            )) || <li className="italic opacity-50">No disadvantages recorded</li>}
-          </ul>
+          <p className="font-body text-sm text-white/70 italic">
+            {entry.disadvantage || "No disadvantages recorded"}
+          </p>
         </div>
       </div>
 
@@ -151,10 +145,10 @@ const JournalCard: React.FC<JournalCardProps> = ({
         </div>
         <div className="mt-12 pt-6 border-t border-[#494847]/10">
           <span className="font-label text-[16px] uppercase tracking-[0.2em] text-[#9cff93] font-bold mb-2 block">
-            System Feedback
+            Feedback
           </span>
           <p className="font-body text-xs text-[#adaaaa] tracking-wide">
-            {entry.systemFeedback || "N/A"}
+            {entry.feedback || "N/A"}
           </p>
         </div>
       </div>
@@ -163,9 +157,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
         <button
           onClick={() => handleToggleResult(id)}
           className={`flex-1 ${
-            entry.result === "win"
+            entry.winLose === "WIN"
               ? "bg-[#9cff93]/10 border-[#9cff93]/30 text-[#9cff93]"
-              : entry.result === "loss"
+              : entry.winLose === "LOSE"
               ? "bg-[#ff716c]/10 border-[#ff716c]/30 text-[#ff716c]"
               : "bg-white/5 border-white/10 text-white/40"
           } hover:brightness-125 font-label text-[13px] font-bold py-5 rounded-lg transition-all border flex flex-col items-center justify-center gap-2 group uppercase tracking-widest`}
@@ -174,9 +168,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
             className="material-symbols-outlined text-2xl"
             style={{ fontVariationSettings: "'FILL' 1" }}
           >
-            {entry.result === "win" ? "emoji_events" : entry.result === "loss" ? "trending_down" : "pending"}
+            {entry.winLose === "WIN" ? "emoji_events" : entry.winLose === "LOSE" ? "trending_down" : "pending"}
           </span>
-          {entry.result === "win" ? "Win" : entry.result === "loss" ? "Lose" : "No Result"}
+          {entry.winLose === "WIN" ? "Win" : entry.winLose === "LOSE" ? "Lose" : "No Result"}
         </button>
         <button
           onClick={() => handleEditClick(entry)}

@@ -4,34 +4,40 @@ import { persist } from "zustand/middleware";
 export type JournalEntry = {
   id: string;
   _id?: string;
-  assetName: string;
-  side: "long" | "short";
+  recordId?: number;
+  userId: number;
+  assetId: number;
+  entryModelId: number;
+  setUpTier: string;
+  entryDateTime?: string | number;
+  exitDateTime?: string | number;
   entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
-  timestamp: number;
+  SL: number;
+  TP: number;
+  advantage?: string;
+  disadvantage?: string;
   notes?: string;
-  status: "open" | "closed";
-  pnl?: number;
+  feedback?: string;
+  imageUrl?: string;
+  winLose?: "WIN" | "LOSE" | "OPEN";
+  profit?: number;
+  currentBalance?: number;
+  duration?: number;
+  margin: number;
+  positionPnL?: number;
+  riskPerTrade: number;
+
+  // Frontend helpers for display
+  assetName?: string;
   entryModel?: string;
-  entryDateTime?: string;
-  exitDateTime?: string;
-  result?: "win" | "loss" | "none";
-  exitPrice?: number;
-  duration?: string;
-  advantages?: string[];
-  disadvantages?: string[];
-  systemFeedback?: string;
+  side?: "long" | "short";
 };
 
 interface JournalState {
   entries: JournalEntry[];
   setEntries: (entries: JournalEntry[]) => void;
-  addEntry: (entry: Omit<JournalEntry, "id" | "timestamp" | "status">) => void;
-  closeEntry: (id: string, pnl: number) => void;
-  deleteEntry: (id: string) => void;
-  toggleResult: (id: string) => void;
-  updateJournal: (id: string, updates: Partial<JournalEntry>) => void;
+  deleteEntry: (id: string | number) => void;
+  updateJournal: (id: string | number, updates: Partial<JournalEntry>) => void;
 }
 
 export const useJournalStore = create<JournalState>()(
@@ -39,47 +45,21 @@ export const useJournalStore = create<JournalState>()(
     (set) => ({
       entries: [],
       setEntries: (entries) => set({ entries }),
-      addEntry: (entry) => {
-        const newEntry: JournalEntry = {
-          ...entry,
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          status: "open",
-          result: entry.result || "none",
-        };
-        set((state) => ({
-          entries: [newEntry, ...state.entries],
-        }));
-      },
-      closeEntry: (id, pnl) => {
-        set((state) => ({
-          entries: state.entries.map((e) =>
-            (e.id === id || e._id === id) ? { ...e, status: "closed", pnl } : e
-          ),
-        }));
-      },
+      
       deleteEntry: (id) => {
         set((state) => ({
-          entries: state.entries.filter((e) => e.id !== id && e._id !== id),
-        }));
-      },
-      toggleResult: (id) => {
-        set((state) => ({
-          entries: state.entries.map((e) => {
-            if (e.id !== id && e._id !== id) return e;
-            let nextResult: "win" | "loss" | "none" = "none";
-            if (e.result === "none") nextResult = "win";
-            else if (e.result === "win") nextResult = "loss";
-            else nextResult = "none";
-            return { ...e, result: nextResult };
-          }),
+          entries: state.entries.filter(
+            (e) => e.id !== id && e._id !== id && e.recordId !== id
+          ),
         }));
       },
 
       updateJournal: (id, updates) => {
         set((state) => ({
           entries: state.entries.map((e) =>
-            (e.id === id || e._id === id) ? { ...e, ...updates } : e
+            (e.id === id || e._id === id || e.recordId === id) 
+              ? { ...e, ...updates } 
+              : e
           ),
         }));
       },

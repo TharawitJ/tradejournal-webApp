@@ -20,8 +20,11 @@ export const apiRegister = async (body:any) => {
 }
 
 export const getUserProfile = () => mainApi.get('/user/profile')
-export const updateUserProfile = (body:any) => mainApi.patch(`/user/profile`, body)
+export const updateUserProfile = (id:any,body:any) => mainApi.patch(`/user/profile`, body)
 export const deleteUserProfile = () => mainApi.delete(`/user/profile`)
+export const getUserModel = () => mainApi.get(`/usermodel`)
+export const createUserModel = (body: any) => mainApi.post(`/usermodel`, body)
+export const deleteUserModel = (id: number) => mainApi.delete(`/usermodel/${id}`)
 
 export const createJournal = (body:any) => mainApi.post('/journal', body)
 export const getAllJournal = () => mainApi.get('/journal')
@@ -38,7 +41,7 @@ export const getDashboardWinRate = () => mainApi.get('/dashboard/winrate')
 //   "winrate": 100
 // }
 export const getDashboardPnL = () => mainApi.get('/dashboard/pnl')
-// result example if winLose === "WIN"||"LOSE" the backend will cal profit and update data
+// winLose toggle from frontend profitPosition get calculate at frontend and update to backend if winLose === "WIN"||"LOSE".
   // "result": [
   //   {
   //     "duration": null,
