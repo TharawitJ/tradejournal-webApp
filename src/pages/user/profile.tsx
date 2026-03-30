@@ -25,8 +25,8 @@ const ProfilePage: React.FC = () => {
 
   const handleUserEdit = async () => {
     try {
-      console.log(userModels)
-      const resp = await updateUserProfile(user.id, editData);
+      // console.log(userModels)
+      const resp = await updateUserProfile(user!.id, editData);
       const freshUser = resp.data.user;
 
       // Update global store

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import BinanceChart from "../../components/chart/Chart";
+import useUserStore from "../../stores/userStore"
 import { useChartStore } from "../../stores/chartStore";
 import { useJournalStore } from "../../stores/journalStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
 
 const AssetChartStockView: React.FC = () => {
+  const userModels = useUserStore((state) => state.userModels);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [entryModel, setEntryModel] = useState("Breakout");
@@ -26,7 +28,7 @@ const AssetChartStockView: React.FC = () => {
   } = useChartStore();
   const { addEntry } = useJournalStore();
 
-  const handleRecordJournal = () => {
+  const handleRecordJournal = () => { 
     if (
       !position ||
       entryPrice === "" ||
@@ -41,12 +43,14 @@ const AssetChartStockView: React.FC = () => {
 
   const saveJournal = () => {
     const tradeData = {
-      assetName,
-      side: position!,
+      assetId: 1, // Placeholder: need logic to map assetName to assetId
+      entryModelId: 1, // Placeholder: need selection logic
+      setUpTier: "A",
       entryPrice: Number(entryPrice),
-      stopLoss: Number(stopLoss),
-      takeProfit: Number(takeProfit),
-      rrRatio: calculateRR(),
+      SL: Number(stopLoss),
+      TP: Number(takeProfit),
+      margin: 100, // Placeholder
+      riskPerTrade: 1, // Placeholder
       notes,
       entryModel,
       entryDateTime,
@@ -57,7 +61,7 @@ const AssetChartStockView: React.FC = () => {
     addEntry(tradeData);
     setIsModalOpen(false);
     setNotes("");
-    setEntryModel("Breakout");
+    setEntryModel("");
     setEntryDateTime(new Date().toISOString().slice(0, 16));
     alert("Journal recorded successfully!");
   };
@@ -224,13 +228,9 @@ const AssetChartStockView: React.FC = () => {
                     value={entryModel}
                     onChange={(e) => setEntryModel(e.target.value)}
                     className="w-[90%] mx-auto bg-[#0e0e0e]  p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
-                  >
-                    <option value="Breakout">Breakout</option>
-                    <option value="Retest">Retest</option>
-                    <option value="Trend Continuation">Trend Continuation</option>
-                    <option value="Reversal">Reversal</option>
-                    <option value="Scalp">Scalp</option>
-                    <option value="Other">Other</option>
+                  >{userModels.map((model: any) => (
+                    <option className="font-medium" key={model.id}>{model.name}</option>
+                ))}
                   </select>
                 </div>
                 </div>

@@ -3,30 +3,30 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 interface UserState {
-  user: any | null;
+  user: User | null;
   token: string;
-  userModels: any[];
+  userModels: EntryModel[];
   login: (body: any) => Promise<any>;
   logout: () => void;
-  setUpdateUser: (userData: any, token?: string) => void;
+  setUpdateUser: (userData: User, token?: string) => void;
   fetchUserModels: () => Promise<void>;
-  createUserModel: (body: any) => Promise<void>;
+  createUserModel: (body: { name: string; userId: number }) => Promise<void>;
   deleteUserModel: (id: number) => Promise<void>;
 }
 
-const useUserStore = create<UserState>(
+const useUserStore = create<UserState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       token: "",
       userModels: [],
-      login: async (body: any) => {
+      login: async (body) => {
         const resp = await mainApi.post("/login", body);
         set({ token: resp.data.token, user: resp.data.user });
         return resp;
       },
       logout: () => set({ token: "", user: null, userModels: [] }),
-      setUpdateUser: (userData: any, token?: string) =>
+      setUpdateUser: (userData, token) =>
         set((state) => ({
           user: userData,
           token: token || state.token,
@@ -39,10 +39,9 @@ const useUserStore = create<UserState>(
           console.error("Failed to fetch user models", err);
         }
       },
-      createUserModel: async (body: any) => {
+      createUserModel: async (body) => {
         try {
           await createUserModel(body);
-          // Refetch to update the list and re-render UI
           const resp = await getUserModel();
           set({ userModels: resp.data.userModel || [] });
         } catch (err) {
@@ -50,10 +49,9 @@ const useUserStore = create<UserState>(
           throw err;
         }
       },
-      deleteUserModel: async (id: number) => {
+      deleteUserModel: async (id) => {
         try {
           await deleteUserModelApi(id);
-          // Update state locally or refetch
           set((state) => ({
             userModels: state.userModels.filter((m) => m.id !== id),
           }));
@@ -66,8 +64,8 @@ const useUserStore = create<UserState>(
     {
       name: "userState",
       storage: createJSONStorage(() => localStorage),
-    },
-  ) as any,
+    }
+  )
 );
 
 export default useUserStore;
