@@ -5,22 +5,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "../../validations/user.schema.ts";
 // import axios from "axios"
-import { Flip, toast, ToastContainer, Zoom } from "react-toastify";
-import { apiRegister, mainApi } from "../../api/apiMain.ts";
+import {  toast,  Zoom } from "react-toastify";
+import { apiRegister } from "../../api/apiMain.ts";
 
-/**
- * RegisterScreen Component
- *
- * This component represents a registration screen for the Trade Journal platform.
- * It features a centered registration card with fields for name, email,
- * password, and confirm password, along with a shared footer.
- *
- * Note: This component uses custom Tailwind CSS colors, fonts, and gradients defined
- * in the project's tailwind.config.js.
- */
 
 const RegisterScreen: React.FC = () => {
-  const { register, handleSubmit, formState, reset } = useForm({
+  // const {abc,handleSubmit} = useForm({})
+  // handleSubmit working with mode: "onSubmit",
+  const { register, handleSubmit } = useForm({
     resolver: zodResolver(registerSchema),
     mode: "onSubmit",
     defaultValues: {
@@ -30,15 +22,16 @@ const RegisterScreen: React.FC = () => {
       passwordConfirm: "",
     },
   });
-  const { errors, isSubmitting } = formState;
+  // error from zod // isSubmitting loading state
+  // const { errors, isSubmitting } = formState;
   const navigate = useNavigate();
 
-  const onSubmit = async (data, e) => {
-    e?.preventDefault();
+  const onSubmit = async (data) => {
+    // e?.preventDefault();
     // console.log(data)
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const resp = await apiRegister(data);
+      await apiRegister(data);
       toast.success("Register Successful", {
         transition: Zoom,
         autoClose: 4000,

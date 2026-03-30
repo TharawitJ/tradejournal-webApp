@@ -14,7 +14,7 @@ interface ChartState {
   data: ChartData[];
   lastPrice: number | null;
   timeframe: string;
-  position: "long" | "short" | null;
+  position: "LONG" | "SHORT" | "OPEN";
   entryPrice: number | "";
   stopLoss: number | "";
   takeProfit: number | "";
@@ -22,30 +22,22 @@ interface ChartState {
   timezone: string;
 
   // Extra Price Lines State
-  maxPrice: number | null;
-  minPrice: number | null;
-  avgPrice: number | null;
-  showMaxLine: boolean;
-  showMinLine: boolean;
-  showAvgLine: boolean;
+  // maxPrice: number | null;
+  // minPrice: number | null;
+  // avgPrice: number | null;
 
   setData: (data: ChartData[]) => void;
   updateLastCandle: (candle: ChartData) => void;
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
   setTimezone: (tz: string) => void;
-  setPosition: (pos: "long" | "short" | null) => void;
+  setPosition: (pos: "LONG" | "SHORT" | "OPEN") => void;
   setAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
   setStopLoss: (price: number | "") => void;
   setTakeProfit: (price: number | "") => void;
-  togglePosition: (type: "long" | "short") => void;
+  togglePosition: (type: "LONG" | "SHORT" | "OPEN") => void;
   loadHistoricalData: () => Promise<void>;
-
-  // Extra Line Controls
-  setShowMaxLine: (show: boolean) => void;
-  setShowMinLine: (show: boolean) => void;
-  setShowAvgLine: (show: boolean) => void;
 }
 
 const calculateStats = (data: ChartData[]) => {
@@ -71,19 +63,19 @@ export const useChartStore = create<ChartState>((set, get) => ({
   data: [],
   lastPrice: null,
   timeframe: localStorage.getItem("selectedTimeframe") || "1d",
-  position: null,
+  position: "OPEN",
   entryPrice: "",
   stopLoss: "",
   takeProfit: "",
   assetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
   timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
-  maxPrice: null,
-  minPrice: null,
-  avgPrice: null,
-  showMaxLine: false,
-  showMinLine: false,
-  showAvgLine: false,
+  // maxPrice: null,
+  // minPrice: null,
+  // avgPrice: null,
+  // showMaxLine: false,
+  // showMinLine: false,
+  // showAvgLine: false,
 
   setData: (data) => {
     const lastPrice = data.length > 0 ? data[data.length - 1].close : null;
@@ -91,9 +83,9 @@ export const useChartStore = create<ChartState>((set, get) => ({
     set({
       data,
       lastPrice,
-      maxPrice: stats.max,
-      minPrice: stats.min,
-      avgPrice: stats.avg,
+      //   maxPrice: stats.max,
+      //   minPrice: stats.min,
+      //   avgPrice: stats.avg,
     });
   },
 
@@ -113,14 +105,14 @@ export const useChartStore = create<ChartState>((set, get) => ({
       }
     }
 
-    const stats = calculateStats(updatedData);
-    set({
-      data: updatedData,
-      lastPrice: candle.close,
-      maxPrice: stats.max,
-      minPrice: stats.min,
-      avgPrice: stats.avg,
-    });
+    // const stats = calculateStats(updatedData);
+    // set({
+    //   data: updatedData,
+    //   lastPrice: candle.close,
+    //   maxPrice: stats.max,
+    //   minPrice: stats.min,
+    //   avgPrice: stats.avg,
+    // });
   },
 
   setLastPrice: (price) => set({ lastPrice: price }),
@@ -145,7 +137,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
     const { position, lastPrice } = get();
     if (position === type) {
       set({
-        position: null,
+        position: "OPEN",
         entryPrice: "",
         stopLoss: "",
         takeProfit: "",
@@ -154,8 +146,8 @@ export const useChartStore = create<ChartState>((set, get) => ({
       if (lastPrice) {
         const entry = Number(lastPrice.toFixed(3));
         const offset = entry * 0.01;
-        const sl = type === "long" ? entry - offset : entry + offset;
-        const tp = type === "long" ? entry + offset : entry - offset;
+        const sl = type === "LONG" ? entry - offset : entry + offset;
+        const tp = type === "LONG" ? entry + offset : entry - offset;
 
         set({
           position: type,
@@ -173,18 +165,14 @@ export const useChartStore = create<ChartState>((set, get) => ({
     const { assetName, timeframe, timezone } = get();
     set({ data: [] });
     const formattedData = await fetchHistoricalData(assetName, timeframe);
-    
+
     // Apply timezone offset
-    const offset = TIMEZONES.find(tz => tz.label === timezone)?.offset || 0;
-    const adjustedData = formattedData.map(d => ({
+    const offset = TIMEZONES.find((tz) => tz.label === timezone)?.offset || 0;
+    const adjustedData = formattedData.map((d) => ({
       ...d,
-      time: d.time + offset
+      time: d.time + offset,
     }));
 
     get().setData(adjustedData);
   },
-
-  setShowMaxLine: (show) => set({ showMaxLine: show }),
-  setShowMinLine: (show) => set({ showMinLine: show }),
-  setShowAvgLine: (show) => set({ showAvgLine: show }),
 }));

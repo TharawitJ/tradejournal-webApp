@@ -168,11 +168,11 @@ export default function BinanceChart() {
       }}>
         <div style={{ display: "flex", gap: "10px" }}>
           <button 
-            onClick={() => togglePosition("long")}
+            onClick={() => togglePosition("LONG")}
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "long" ? "#26a69a" : "transparent",
+              background: position === "LONG" ? "#26a69a" : "transparent",
               border: "1px solid #26a69a",
               color: "white",
               borderRadius: "4px",
@@ -184,11 +184,11 @@ export default function BinanceChart() {
           </button>
 
           <button 
-            onClick={() => togglePosition("short")}
+            onClick={() => togglePosition("SHORT")}
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "short" ? "#ef5350" : "transparent",
+              background: position === "SHORT" ? "#ef5350" : "transparent",
               border: "1px solid #ef5350",
               color: "white",
               borderRadius: "4px",
@@ -232,7 +232,7 @@ export default function BinanceChart() {
 
         {position && (
           <div style={{ marginTop: "5px", fontSize: "10px", color: "#868993" }}>
-            Current Position: <span style={{ color: position === "long" ? "#26a69a" : "#ef5350", fontWeight: "bold" }}>{position.toUpperCase()}</span>
+            Current Position: <span style={{ color: position === "LONG" ? "#26a69a" : "#ef5350", fontWeight: "bold" }}>{position.toUpperCase()}</span>
           </div>
         )}
       </div>
@@ -243,7 +243,7 @@ export default function BinanceChart() {
             <PriceLine
               price={Number(entryPrice)}
               options={{
-                title: position === "long" ? "ENTRY LONG" : "ENTRY SHORT",
+                title: position === "LONG" ? "ENTRY LONG" : "ENTRY SHORT",
                 color: "white",
                 lineWidth: 1,
                 axisLabelVisible: true,

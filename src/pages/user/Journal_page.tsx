@@ -14,7 +14,7 @@ import { toast } from "react-toastify";
 import JournalCard from "../../components/journal/journal";
 
 const JournalPage: React.FC = () => {
-  const { entries, updateJournal, setEntries, deleteEntry } = useJournalStore();
+  const {entries, updateJournal, setEntries, deleteEntry } = useJournalStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -46,6 +46,7 @@ const JournalPage: React.FC = () => {
     positionPnL: "",
     duration: "",
   });
+  // POST if resp.status === 200 GET data back update state re-render
 
   const fetchJournals = async () => {
     try {
@@ -158,7 +159,7 @@ const JournalPage: React.FC = () => {
         disadvantage: form.disadvantage,
         notes: form.notes,
         feedback: form.feedback,
-        winLose: form.winLose === "NONE" ? undefined : form.winLose,
+        winLose: form.winLose === "OPEN" ? undefined : form.winLose,
         profit: form.profit ? parseFloat(form.profit) : undefined,
         currentBalance: form.currentBalance
           ? parseFloat(form.currentBalance)

@@ -26,7 +26,7 @@ const AssetChartStockView: React.FC = () => {
     updateLastCandle,
     loadHistoricalData,
   } = useChartStore();
-  const { addEntry } = useJournalStore();
+  const { setEntries } = useJournalStore();
 
   const handleRecordJournal = () => { 
     if (
@@ -58,7 +58,7 @@ const AssetChartStockView: React.FC = () => {
 
     console.log("Saving Journal Entry:", tradeData);
 
-    addEntry(tradeData);
+    setEntries(tradeData);
     setIsModalOpen(false);
     setNotes("");
     setEntryModel("");
@@ -175,7 +175,7 @@ const AssetChartStockView: React.FC = () => {
                     Side
                   </label>
                   <p
-                    className={`text-sm font-bold ${position === "long" ? "text-[#26a69a]" : "text-[#ef5350]"}`}
+                    className={`text-sm font-bold ${position === "LONG" ? "text-[#26a69a]" : "text-[#ef5350]"}`}
                   >
                     {position?.toUpperCase()}
                   </p>
