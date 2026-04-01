@@ -10,35 +10,37 @@ interface ChartData {
   close: number;
 }
 
+
 interface ChartState {
   data: ChartData[];
   lastPrice: number | null;
   timeframe: string;
-  position: "LONG" | "SHORT" | "OPEN";
+  position: "LONG" | "SHORT";
   entryPrice: number | "";
-  stopLoss: number | "";
-  takeProfit: number | "";
-  assetName: string;
+  SL: number | "";
+  TP: number | "";
+  currentAssetName: string;
   timezone: string;
 
   // Extra Price Lines State
-  // maxPrice: number | null;
-  // minPrice: number | null;
-  // avgPrice: number | null;
-
+  maxPrice: number | null;
+  minPrice: number | null;
+  avgPrice: number | null;
+  // setAllAsset:() => void;
   setData: (data: ChartData[]) => void;
   updateLastCandle: (candle: ChartData) => void;
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
   setTimezone: (tz: string) => void;
-  setPosition: (pos: "LONG" | "SHORT" | "OPEN") => void;
-  setAssetName: (asset: string) => void;
+  setPosition: (pos: "LONG" | "SHORT" ) => void;
+  setCurrentAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
-  setStopLoss: (price: number | "") => void;
-  setTakeProfit: (price: number | "") => void;
-  togglePosition: (type: "LONG" | "SHORT" | "OPEN") => void;
+  setSL: (price: number | "") => void;
+  setTP: (price: number | "") => void;
+  togglePosition: (type: "LONG" | "SHORT") => void;
   loadHistoricalData: () => Promise<void>;
 }
+
 
 const calculateStats = (data: ChartData[]) => {
   if (data.length === 0) return { max: null, min: null, avg: null };
@@ -63,16 +65,16 @@ export const useChartStore = create<ChartState>((set, get) => ({
   data: [],
   lastPrice: null,
   timeframe: localStorage.getItem("selectedTimeframe") || "1d",
-  position: "OPEN",
+  position:null,
   entryPrice: "",
-  stopLoss: "",
-  takeProfit: "",
-  assetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
+  SL: "",
+  TP: "",
+  currentAssetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
   timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
-  // maxPrice: null,
-  // minPrice: null,
-  // avgPrice: null,
+  maxPrice: null,
+  minPrice: null,
+  avgPrice: null,
   // showMaxLine: false,
   // showMinLine: false,
   // showAvgLine: false,
@@ -83,9 +85,9 @@ export const useChartStore = create<ChartState>((set, get) => ({
     set({
       data,
       lastPrice,
-      //   maxPrice: stats.max,
-      //   minPrice: stats.min,
-      //   avgPrice: stats.avg,
+        maxPrice: stats.max,
+        minPrice: stats.min,
+        avgPrice: stats.avg,
     });
   },
 
@@ -105,14 +107,14 @@ export const useChartStore = create<ChartState>((set, get) => ({
       }
     }
 
-    // const stats = calculateStats(updatedData);
-    // set({
-    //   data: updatedData,
-    //   lastPrice: candle.close,
-    //   maxPrice: stats.max,
-    //   minPrice: stats.min,
-    //   avgPrice: stats.avg,
-    // });
+    const stats = calculateStats(updatedData);
+    set({
+      data: updatedData,
+      lastPrice: candle.close,
+      maxPrice: stats.max,
+      minPrice: stats.min,
+      avgPrice: stats.avg,
+    });
   },
 
   setLastPrice: (price) => set({ lastPrice: price }),
@@ -125,13 +127,13 @@ export const useChartStore = create<ChartState>((set, get) => ({
     set({ timezone: tz });
   },
   setPosition: (pos) => set({ position: pos }),
-  setAssetName: (asset) => {
+  setCurrentAssetName: (asset) => {
     localStorage.setItem("selectedAsset", asset);
-    set({ assetName: asset });
+    set({ currentAssetName: asset });
   },
   setEntryPrice: (price) => set({ entryPrice: price }),
-  setStopLoss: (price) => set({ stopLoss: price }),
-  setTakeProfit: (price) => set({ takeProfit: price }),
+  setSL: (price) => set({ SL: price }),
+  setTP: (price) => set({ TP: price }),
 
   togglePosition: (type) => {
     const { position, lastPrice } = get();
@@ -139,21 +141,22 @@ export const useChartStore = create<ChartState>((set, get) => ({
       set({
         position: "OPEN",
         entryPrice: "",
-        stopLoss: "",
-        takeProfit: "",
+        SL: "",
+        TP: "",
       });
     } else {
       if (lastPrice) {
         const entry = Number(lastPrice.toFixed(3));
-        const offset = entry * 0.01;
-        const sl = type === "LONG" ? entry - offset : entry + offset;
-        const tp = type === "LONG" ? entry + offset : entry - offset;
+        const offsetSL = entry * 0.01;
+        const offsetTP = entry * 0.02;
+        const sl = type === "SHORT" ? entry + offsetSL : entry - offsetSL;
+        const tp = type === "LONG" ? entry + offsetTP : entry - offsetTP;
 
         set({
           position: type,
           entryPrice: entry,
-          stopLoss: Number(sl.toFixed(3)),
-          takeProfit: Number(tp.toFixed(3)),
+          SL: Number(sl.toFixed(3)),
+          TP: Number(tp.toFixed(3)),
         });
       } else {
         set({ position: type });
@@ -162,9 +165,12 @@ export const useChartStore = create<ChartState>((set, get) => ({
   },
 
   loadHistoricalData: async () => {
-    const { assetName, timeframe, timezone } = get();
+    const { currentAssetName, timeframe, timezone } = get();
     set({ data: [] });
-    const formattedData = await fetchHistoricalData(assetName, timeframe);
+    const formattedData = await fetchHistoricalData(
+      currentAssetName,
+      timeframe,
+    );
 
     // Apply timezone offset
     const offset = TIMEZONES.find((tz) => tz.label === timezone)?.offset || 0;

@@ -20,16 +20,18 @@ export const apiRegister = async (body:any) => {
 }
 
 export const getUserProfile = () => mainApi.get('/user/profile')
-export const updateUserProfile = (id:any,body:any) => mainApi.patch(`/user/profile`, body)
+export const updateUserProfile = (userId:any,body:any) => mainApi.patch(`/user/profile`, body)
 export const deleteUserProfile = () => mainApi.delete(`/user/profile`)
 export const getUserModel = () => mainApi.get(`/usermodel`)
 export const createUserModel = (body: any) => mainApi.post(`/usermodel`, body)
-export const deleteUserModel = (id: number) => mainApi.delete(`/usermodel/${id}`)
+export const deleteUserModel = (userId: number) => mainApi.delete(`/usermodel/${userId}`)
+export const getUserFundHistory = (userId:number)=>mainApi.get(`/fundhistory/${userId}`)
+export const getAllAsset = ()=>mainApi.get(`/asset/`)
 
-export const createJournal = (body:any) => mainApi.post('/journal', body)
-export const getAllJournal = () => mainApi.get('/journal')
-export const updateJournal = (id:string, body:any) => mainApi.patch(`/journal/${id}`, body)
-export const deleteJournal = (id:string) => mainApi.delete(`/journal/${id}`)
+export const apiGetAllJournal = () => mainApi.get(`/journal`)
+export const apiCreateJournal = (body:any) => mainApi.post('/journal', body)
+export const apiUpdateJournal = (id:string, body:any) => mainApi.patch(`/journal/${id}`, body)
+export const apiDeleteJournal = (id:string) => mainApi.delete(`/journal/${id}`)
 
 // export const getDashboard = ()=>mainApi.get(`/dashboard`)
 export const getDashboardRR = () => mainApi.get('/dashboard/riskreward')

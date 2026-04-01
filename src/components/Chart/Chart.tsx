@@ -19,12 +19,12 @@ export default function BinanceChart() {
     setTimezone,
     position,
     entryPrice,
-    stopLoss,
-    takeProfit,
-    assetName,
+    SL,
+    TP,
+    currentAssetName,
     setEntryPrice,
-    setStopLoss,
-    setTakeProfit,
+    setSL,
+    setTP,
     togglePosition,
     loadHistoricalData,
     updateLastCandle,
@@ -39,7 +39,7 @@ export default function BinanceChart() {
 
   // 🔌 WebSocket live updates
   useEffect(() => {
-    const WS_URL = getBinanceWSUrl(assetName,timeframe);
+    const WS_URL = getBinanceWSUrl(currentAssetName,timeframe);
     const ws = new WebSocket(WS_URL);
 
     ws.onmessage = (event) => {
@@ -58,7 +58,7 @@ export default function BinanceChart() {
     };
 
     return () => ws.close();
-  }, [assetName,timeframe, timezoneOffset, updateLastCandle]);
+  }, [currentAssetName,timeframe, timezoneOffset, updateLastCandle]);
 
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
@@ -214,8 +214,8 @@ export default function BinanceChart() {
           <label>Stop Loss</label>
           <input 
             type="number" 
-            value={stopLoss} 
-            onChange={(e) => setStopLoss(Number(e.target.value))}
+            value={SL} 
+            onChange={(e) => setSL(Number(e.target.value))}
             style={{ background: "#1e222d", border: "1px solid #363c4e", color: "white", padding: "4px" }}
           />
         </div>
@@ -224,8 +224,8 @@ export default function BinanceChart() {
           <label>Take Profit</label>
           <input 
             type="number" 
-            value={takeProfit} 
-            onChange={(e) => setTakeProfit(Number(e.target.value))}
+            value={TP} 
+            onChange={(e) => setTP(Number(e.target.value))}
             style={{ background: "#1e222d", border: "1px solid #363c4e", color: "white", padding: "4px" }}
           />
         </div>
@@ -251,9 +251,9 @@ export default function BinanceChart() {
               }}
             />
           )}
-          {stopLoss !== "" && (
+          {SL !== "" && (
             <PriceLine
-              price={Number(stopLoss)}
+              price={Number(SL)}
               options={{
                 title: "SL",
                 color: "#ff6b6b",
@@ -263,9 +263,9 @@ export default function BinanceChart() {
               }}
             />
           )}
-          {takeProfit !== "" && (
+          {TP !== "" && (
             <PriceLine
-              price={Number(takeProfit)}
+              price={Number(TP)}
               options={{
                 title: "TP",
                 color: "#28a49c",

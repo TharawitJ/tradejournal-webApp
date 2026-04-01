@@ -2,25 +2,29 @@ export {};
 
 declare global {
   interface User {
-    id: number;
     userId: number;
     username: string;
     email: string;
   }
 
   interface EntryModel {
-    id: number;
+    modelId: number;
     name: string;
     userId: number;
   }
+  interface FundHistory {
+    fundId: number;
+    date: string;
+    amouth: number;
+  }
 
   interface JournalEntry {
-    id: string;
-    _id?: string;
-    recordId?: number;
-    userId: number;
-    assetId: number;
-    entryModelId: number;
+    recordId: string;
+    userId: string | number;
+    entryAssetId: string | number;
+    entryAssetName:string| number;
+    entryModelId:string | number;
+    entryModelName:string| number;
     setUpTier: string;
     entryDateTime?: string | number;
     exitDateTime?: string | number;
@@ -39,10 +43,11 @@ declare global {
     margin: number;
     positionPnL?: number;
     riskPerTrade: number;
+    leverage: number;
 
     // Frontend display helpers
     assetName?: string;
     entryModel?: string;
-    side?: "long" | "short";
+    side?: "LONG" | "SHORT";
   }
 }

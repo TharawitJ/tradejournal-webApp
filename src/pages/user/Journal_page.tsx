@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useJournalStore } from "../../stores/journalStore";
+import { useJournalStore, useFetchAllAsset } from "../../stores/journalStore";
 import type { JournalEntry } from "../../stores/journalStore";
+import useUserStore from "../../stores/userStore";
 import {
-  getAllJournal,
-  updateJournal as updateJournalApi,
-  deleteJournal as deleteJournalApi,
-  createJournal as createJournalApi,
   getDashboardRR,
   getDashboardWinRate,
   getDashboardPnL,
@@ -14,7 +11,9 @@ import { toast } from "react-toastify";
 import JournalCard from "../../components/journal/journal";
 
 const JournalPage: React.FC = () => {
-  const {entries, updateJournal, setEntries, deleteEntry } = useJournalStore();
+  const { entries, updateJournal, setEntries, deleteJournal, fetchJournal } =
+    useJournalStore();
+
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -26,9 +25,11 @@ const JournalPage: React.FC = () => {
 
   // Modal form state
   const [form, setForm] = useState({
-    assetId: "",
+    entryAssetId: "",
+    entryAssetName: "",
     entryModelId: "",
-    setUpTier: "TIER1",
+    entryModelName: "",
+    setUpTier: "A",
     entryPrice: "",
     SL: "",
     TP: "",
@@ -46,17 +47,28 @@ const JournalPage: React.FC = () => {
     positionPnL: "",
     duration: "",
   });
+
   // POST if resp.status === 200 GET data back update state re-render
 
-  const fetchJournals = async () => {
-    try {
-      const resp = await getAllJournal();
-      console.log(resp.data);
-      setEntries(resp.data);
-    } catch (err) {
-      console.error("Failed to get journals", err);
-    }
-  };
+  // const fetchJournals = async () => {
+  //   try {
+  //     const resp = await getAllJournal();
+  //     // console.log(resp.data);
+  //     setEntries(resp.data);
+  //   } catch (err) {
+  //     console.error("Failed to get journals", err);
+  //   }
+  // };
+  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
+  const fetchUserModels = useUserStore((state) => state.fetchUserModels);
+  // const [entryAssetId, setEntryAssetId] = useState("");
+  // const [entryModelId, setEntryModelId] = useState("");
+  // const [currentAssetName, setCurrentAssetName] = useState("");
+  // const [entryModelId, setEntryModelId] = useState("");
+  // const [entryModelName, setEntryModelName] = useState("");
+
+  const allAsset = useFetchAllAsset((state) => state.allAsset);
+  const userModels = useUserStore((state) => state.userModels);
 
   const fetchStats = async () => {
     try {
@@ -81,23 +93,18 @@ const JournalPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchJournals();
-    fetchStats();
+    fetchJournal();
+    // fetchStats();
   }, []);
-
-  const calculateRR = (entry: JournalEntry) => {
-    const risk = Math.abs(entry.entryPrice - entry.SL);
-    const reward = Math.abs(entry.entryPrice - entry.TP);
-    if (risk === 0) return "0";
-    return (reward / risk).toFixed(1);
-  };
 
   const handleEditClick = (entry: JournalEntry) => {
     setEditingEntry(entry);
     setForm({
-      assetId: entry.assetId?.toString() || "",
+      entryAssetId: entry.entryAssetId?.toString() || "",
+      entryAssetName: entry.entryAssetName?.toString() || "",
       entryModelId: entry.entryModelId?.toString() || "",
-      setUpTier: entry.setUpTier || "TIER1",
+      entryModelName: entry.entryModelName?.toString() || "",
+      setUpTier: entry.setUpTier || "A",
       entryPrice: entry.entryPrice.toString(),
       SL: entry.SL.toString(),
       TP: entry.TP.toString(),
@@ -114,39 +121,19 @@ const JournalPage: React.FC = () => {
       currentBalance: entry.currentBalance?.toString() || "",
       positionPnL: entry.positionPnL?.toString() || "",
       duration: entry.duration?.toString() || "",
+      // percentageTP,
+      // percentageSL,
     });
   };
 
-  const handleAddClick = () => {
-    setIsAdding(true);
-    setForm({
-      assetId: "",
-      entryModelId: "",
-      setUpTier: "TIER1",
-      entryPrice: "",
-      SL: "",
-      TP: "",
-      margin: "",
-      riskPerTrade: "",
-      entryDateTime: new Date().toISOString().slice(0, 16).replace("T", " "),
-      exitDateTime: "",
-      advantage: "",
-      disadvantage: "",
-      notes: "",
-      feedback: "",
-      winLose: "OPEN",
-      profit: "",
-      currentBalance: "",
-      positionPnL: "",
-      duration: "",
-    });
-  };
-
-  const handleSave = async () => {
+  const handleSave = async (entry: JournalEntry) => {
+    setEditingEntry(entry);
     try {
       const data = {
-        assetId: parseInt(form.assetId),
+        entryAssetId: parseInt(form.entryAssetId),
+        entryAssetName: form.entryAssetName,
         entryModelId: parseInt(form.entryModelId),
+        entryModelName: form.entryModelName,
         setUpTier: form.setUpTier,
         entryPrice: parseFloat(form.entryPrice),
         SL: parseFloat(form.SL),
@@ -159,7 +146,7 @@ const JournalPage: React.FC = () => {
         disadvantage: form.disadvantage,
         notes: form.notes,
         feedback: form.feedback,
-        winLose: form.winLose === "OPEN" ? undefined : form.winLose,
+        winLose: form.winLose === "OPEN" ? "OPEN" : form.winLose,
         profit: form.profit ? parseFloat(form.profit) : undefined,
         currentBalance: form.currentBalance
           ? parseFloat(form.currentBalance)
@@ -169,19 +156,17 @@ const JournalPage: React.FC = () => {
           : undefined,
         duration: form.duration ? parseInt(form.duration) : undefined,
       };
+      console.log(data.entryAssetName);
+      console.log(data.entryAssetId);
+      console.log(allAsset);
 
-      if (editingEntry) {
-        const id =
-          (editingEntry as any).recordId ||
-          editingEntry.id ||
-          (editingEntry as any)._id;
-        const resp = await updateJournalApi(id, data);
-        updateJournal(id, resp.data.journal || data);
+      if ((editingEntry.recordId, data)) {
+        updateJournal(editingEntry.recordId, data);
         toast.success("Trade updated successfully");
         setEditingEntry(null);
       } else {
-        await createJournalApi(data);
-        fetchJournals();
+        // await createJournalApi(data);
+        // fetchJournals();
         toast.success("Trade added successfully");
         setIsAdding(false);
       }
@@ -193,11 +178,10 @@ const JournalPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string | number) => {
+  const handleDelete = async (recordId: string | number) => {
     if (window.confirm("Are you sure you want to delete this trade?")) {
       try {
-        await deleteJournalApi(id.toString());
-        deleteEntry(id);
+        deleteJournal(recordId);
         toast.success("Trade deleted");
         fetchStats();
       } catch (err) {
@@ -205,9 +189,14 @@ const JournalPage: React.FC = () => {
       }
     }
   };
+  useEffect(() => {
+    fetchAllAsset();
+    fetchUserModels();
+  }, []);
+  // console.log(userModels);
 
   const handleToggleResult = async (id: string | number) => {
-    const entry = entries.find((e) => e.id === id || (e as any)._id === id || e.recordId === id);
+    const entry = entries.find((e) => e.recordId === id);
     if (!entry) return;
 
     let nextResult: "WIN" | "LOSE" | "OPEN" = "OPEN";
@@ -216,13 +205,21 @@ const JournalPage: React.FC = () => {
     else nextResult = "OPEN";
 
     try {
-      await updateJournalApi(id.toString(), { winLose: nextResult });
+      // await apiUpdateJournal(id.toString(), { winLose: nextResult });
       updateJournal(id, { winLose: nextResult });
       fetchStats();
     } catch (err) {
       toast.error("Failed to update result");
     }
   };
+  // const handleAssetChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  //   setEntryAssetId(e.target.id);
+  //   setCurrentAssetName(e.target.value);
+  // };
+  //   const handleModelChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  //   setEntryModelId(e.target.id);
+  //   setEntryModelName(e.target.value);
+  // };
 
   return (
     <div className="bg-[#0e0e0e] text-[#ffffff] font-body selection:bg-[#9cff93] selection:text-[#006413] min-h-screen">
@@ -236,22 +233,15 @@ const JournalPage: React.FC = () => {
               Documenting the journey to mastery
             </p>
           </div>
-          <button
-            onClick={handleAddClick}
-            className="bg-[#9cff93] text-[#006413] px-8 py-3 rounded-full font-label font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined">add</span>
-            New Trade
-          </button>
         </div>
 
         <div className="space-y-12">
           {entries.length > 0 ? (
             entries.map((entry) => (
               <JournalCard
-                key={entry.id || (entry as any)._id || entry.recordId}
+                key={entry.recordId}
                 entry={entry}
-                calculateRR={calculateRR}
+                // calculateRR={calculateRR}
                 handleToggleResult={handleToggleResult}
                 handleEditClick={handleEditClick}
                 handleDelete={handleDelete}
@@ -277,40 +267,59 @@ const JournalPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
                   <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">
-                    Asset ID
+                    Asset
                   </label>
-                  <input
-                    type="number"
-                    value={form.assetId}
-                    onChange={(e) =>
-                      setForm({ ...form, assetId: e.target.value })
-                    }
-                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
-                  />
+                  <select
+                    // 1. Bind the value to the ID (the number)
+                    value={form.entryAssetId}
+                    onChange={(e) => {
+                      const selectedId = parseInt(e.target.value);
+
+                      // 2. Find the object in your array that matches this ID
+                      const selectedAsset = allAsset.find(
+                        (a) => a.assetId === selectedId,
+                      );
+
+                      if (selectedAsset) {
+                        // 3. Update BOTH at the same time. This prevents the "3" vs "BTC" mixup.
+                        setForm({
+                          ...form,
+                          entryAssetId: selectedAsset.assetId, // Becomes 1
+                          entryAssetName: selectedAsset.assetName, // Becomes "BTCUSDT"
+                        });
+                      }
+                    }}
+                    className="bg-transparent text-white border-none focus:outline-none cursor-pointer "
+                  >
+                    {allAsset.map((asset) => (
+                      <option className="text-white bg-[#1a1919]"
+                        key={asset.assetId}
+                        value={asset.assetId} // The value is now the ID (1, 2, or 3)
+                      >
+                        {asset.assetName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">
-                    Entry Model ID
+                    Entry Model
                   </label>
                   <select
-                    value={form.setUpTier}
+                    value={form.entryModelName}
                     onChange={(e) =>
-                      setForm({ ...form, setUpTier: e.target.value })
+                      setForm({ ...form, entryModelName: e.target.value })
                     }
-                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all appearance-none"
                   >
-                    <option value="TIER1">A</option>
-                    <option value="TIER2">B</option>
-                    <option value="TIER3">C</option>
-                    <option value="TIER3">D</option>
-                    <option value="TIER3">E</option>
+                    {userModels.map((model) => (
+                      <option
+                        key={model.modelId}
+                        className="bg-[#1a1919] border border-gray-800 p-4 rounded-2xl flex justify-between items-center group hover:border-[#9cff93]/30 transition-all"
+                      >
+                        {model.modelName}
+                      </option>
+                    ))}
                   </select>
-                  {/* <input
-                    type="number"
-                    value={form.entryModelId}
-                    onChange={(e) => setForm({ ...form, entryModelId: e.target.value })}
-                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all"
-                  /> */}
                 </div>
                 <div>
                   <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">
@@ -323,11 +332,21 @@ const JournalPage: React.FC = () => {
                     }
                     className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all appearance-none"
                   >
-                    <option value="TIER1">A</option>
-                    <option value="TIER2">B</option>
-                    <option value="TIER3">C</option>
-                    <option value="TIER3">D</option>
-                    <option value="TIER3">E</option>
+                    {/* {allSetUpTier.map((setUpTier) => (
+                      <option
+                        className="font-medium text-black"
+                        key={asset.setUpTier}
+                        value={setUpTier.Name}
+                      >
+                        {setUpTier.Name}
+                      </option>
+                    ))} */}
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
                   </select>
                 </div>
                 <div>

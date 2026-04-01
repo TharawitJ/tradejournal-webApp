@@ -1,71 +1,98 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export type JournalEntry = {
-  id: string;
-  _id?: string;
-  recordId?: number;
-  userId: number;
-  assetId: number;
-  entryModelId: number;
-  setUpTier: string;
-  entryDateTime?: string | number;
-  exitDateTime?: string | number;
-  entryPrice: number;
-  SL: number;
-  TP: number;
-  advantage?: string;
-  disadvantage?: string;
-  notes?: string;
-  feedback?: string;
-  imageUrl?: string;
-  winLose?: "WIN" | "LOSE" | "OPEN";
-  profit?: number;
-  currentBalance?: number;
-  duration?: number;
-  margin: number;
-  positionPnL?: number;
-  riskPerTrade: number;
-
-  // Frontend helpers for display
-  assetName?: string;
-  entryModel?: string;
-  side?: "long" | "short";
-};
+import {
+  getAllAsset,
+  apiCreateJournal,
+  apiGetAllJournal,
+  apiUpdateJournal,
+  apiDeleteJournal,
+} from "../api/apiMain";
 
 interface JournalState {
   entries: JournalEntry[];
   setEntries: (entries: JournalEntry[]) => void;
-  deleteEntry: (id: string | number) => void;
+  fetchJournal: () => void;
+  createJournal: (id: string | number, body: JournalEntry[]) => void;
+  deleteJournal: (id: string | number) => void;
   updateJournal: (id: string | number, updates: Partial<JournalEntry>) => void;
 }
+interface allAsset {
+  assetId: number;
+  assetName: string;
+}
+interface allAssetState {
+  allAsset: allAsset[];
+  fetchAllAsset: () => Promise<void>;
+}
+
+// allAsset: allAsset[]
+export const useFetchAllAsset = create<allAssetState>((set) => ({
+  allAsset: [],
+  fetchAllAsset: async () => {
+    try {
+      const resp = await getAllAsset();
+      set({ allAsset: resp.data.data || [] });
+      // console.log(resp.data.data);
+    } catch (err) {
+      console.error("Failed to fetch user fund history");
+    }
+  },
+}));
 
 export const useJournalStore = create<JournalState>()(
   persist(
     (set) => ({
       entries: [],
       setEntries: (entries) => set({ entries }),
-      
-      deleteEntry: (id) => {
-        set((state) => ({
-          entries: state.entries.filter(
-            (e) => e.id !== id && e._id !== id && e.recordId !== id
-          ),
-        }));
+      fetchJournal: async () => {
+        try {
+          const resp = await apiGetAllJournal();
+
+          set({ entries: resp.data.journalFound || [] });
+        } catch (err) {
+          console.error("Failed to fetch journal");
+        }
       },
 
-      updateJournal: (id, updates) => {
-        set((state) => ({
-          entries: state.entries.map((e) =>
-            (e.id === id || e._id === id || e.recordId === id) 
-              ? { ...e, ...updates } 
-              : e
-          ),
-        }));
+      createJournal: async (body) => {
+        try {
+          await apiCreateJournal(body);
+
+          const resp = await apiGetAllJournal();
+          console.log("createJournal", resp.data);
+
+          set({ data: resp.data.journalFound || [] });
+        } catch (err) {
+          console.error("Failed to create journal");
+        }
+      },
+      deleteJournal: async (recordId) => {
+        try {
+          await apiDeleteJournal(recordId.toString());
+          set((state) => ({
+            entries: state.entries.filter((e) => e.recordId !== recordId),
+          }));
+        } catch (err) {
+          console.error("Failed to create journal");
+        }
+      },
+
+      updateJournal: async (recordId:string|number, updates) => {
+        try {
+          const resp = await apiUpdateJournal(recordId, updates);
+          console.log("updateJournalStore", resp.data);
+          set((state) => ({
+            entries: state.entries.map((data) =>
+              data.recordId === recordId ? { ...data, ...updates } : data,
+            ),
+          }));
+        } catch (err) {
+          console.error("Failed to update journal");
+        }
       },
     }),
     {
       name: "journal-storage",
-    }
-  )
+    },
+  ),
 );

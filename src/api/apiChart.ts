@@ -1,7 +1,7 @@
 
 
-export const fetchHistoricalData = async (assetName:string ,interval: string) => {
-  const REST_URL = `https://api.binance.com/api/v3/klines?symbol=${assetName}&interval=${interval}&limit=5000000`;
+export const fetchHistoricalData = async (currentAssetName:string ,interval: string) => {
+  const REST_URL = `https://api.binance.com/api/v3/klines?symbol=${currentAssetName}&interval=${interval}&limit=5000000`;
   const response = await fetch(REST_URL);
   const raw = await response.json();
   
@@ -14,6 +14,6 @@ export const fetchHistoricalData = async (assetName:string ,interval: string) =>
   }));
 };
 
-export const getBinanceWSUrl = (assetName:string,interval: string) => {
-  return `wss://stream.binance.com:9443/ws/${assetName.toLowerCase()}@kline_${interval}`;
+export const getBinanceWSUrl = (currentAssetName:string,interval: string) => {
+  return `wss://stream.binance.com:9443/ws/${currentAssetName.toLowerCase()}@kline_${interval}`;
 };

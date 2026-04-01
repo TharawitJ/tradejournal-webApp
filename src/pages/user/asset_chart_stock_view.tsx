@@ -1,107 +1,132 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
-import BinanceChart from "../../components/Chart/Chart";
-import useUserStore from "../../stores/userStore"
+import BinanceChart from "../../components/chart/Chart";
+import useUserStore from "../../stores/userStore";
 import { useChartStore } from "../../stores/chartStore";
-import { useJournalStore } from "../../stores/journalStore";
+import { useJournalStore, useFetchAllAsset } from "../../stores/journalStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
+import {
+  calculateRR,
+  calculateWinPnL,
+  calculateLosePnL,
+  calDuration,
+  calculatePercentTP,
+  calculatePercentSL,
+  calPnL,
+} from "../../commons/utils/PnLfunction.ts";
 
 const AssetChartStockView: React.FC = () => {
   const userModels = useUserStore((state) => state.userModels);
+  const [leverage, setLeverage] = useState(10);
+  const [margin, setMargin] = useState(1);
+  // const [percentageTP, setPercentageTP] = useState();
+  // const [percentageSL, setPercentageSL] = useState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
-  const [entryModel, setEntryModel] = useState("Breakout");
+  const [winLose, setWinLose] = useState("OPEN");
+  const [entryAssetId, setEntryAssetId] = useState("");
+  const [entryModelId, setEntryModelId] = useState("");
+  const [setUpTier, setSetUpTier] = useState("");
+  const [entryModelName, setEntryModelName] = useState("");
   const [entryDateTime, setEntryDateTime] = useState(
-    new Date().toISOString().slice(0, 16)
+    new Date().toISOString().slice(0, 16),
   );
 
   const {
     position,
     entryPrice,
-    stopLoss,
-    takeProfit,
-    assetName,
+    SL,
+    TP,
+    currentAssetName,
     timeframe,
-    setAssetName,
+    setCurrentAssetName,
     updateLastCandle,
     loadHistoricalData,
   } = useChartStore();
   const { setEntries } = useJournalStore();
+  const allAsset = useFetchAllAsset((state) => state.allAsset);
+  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
 
-  const handleRecordJournal = () => { 
-    if (
-      !position ||
-      entryPrice === "" ||
-      stopLoss === "" ||
-      takeProfit === ""
-    ) {
+  useEffect(() => {
+    fetchAllAsset();
+  }, []);
+
+  const handleRecordJournal = () => {
+    if (!position || entryPrice === "" || SL === "" || TP === "") {
       alert("Please set a position (Long/Short) on the chart first!");
       return;
     }
+    const resultPnL = calPnL(margin, leverage, entryPrice, SL, TP, winLose);
+    console.log("PnL", resultPnL);
+    // setPercentageTP(resultPnL.tpPercentChange!)
+    // setPercentageSL(resultPnL.slPercentChange!)
     setIsModalOpen(true);
   };
 
   const saveJournal = () => {
     const tradeData = {
-      assetId: 1, // Placeholder: need logic to map assetName to assetId
+      assetId: 1, // Placeholder: need logic to map currentAssetName to assetId
       entryModelId: 1, // Placeholder: need selection logic
       setUpTier: "A",
       entryPrice: Number(entryPrice),
-      SL: Number(stopLoss),
-      TP: Number(takeProfit),
-      margin: 100, // Placeholder
+      SL: Number(SL),
+      TP: Number(TP),
+      margin, // Placeholder
       riskPerTrade: 1, // Placeholder
       notes,
-      entryModel,
+      entryModelName,
       entryDateTime,
+      leverage,
     };
 
-    console.log("Saving Journal Entry:", tradeData);
+    // console.log("Saving Journal Entry:", tradeData);
 
     setEntries(tradeData);
     setIsModalOpen(false);
     setNotes("");
-    setEntryModel("");
+    setEntryModelName("");
     setEntryDateTime(new Date().toISOString().slice(0, 16));
     alert("Journal recorded successfully!");
   };
 
-    useEffect(() => {
-      loadHistoricalData();
-    }, [assetName, loadHistoricalData]);
-    useEffect(() => {
-      console.log(assetName)
-      const WS_URL = getBinanceWSUrl(assetName,timeframe);
-      const ws = new WebSocket(WS_URL);
-  
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        const k = message.k;
-  
-        const candle = {
-          time: k.t / 1000,
-          open: +k.o,
-          high: +k.h,
-          low: +k.l,
-          close: +k.c,
-        };
-  
-        updateLastCandle(candle);
+  useEffect(() => {
+    loadHistoricalData();
+  }, [currentAssetName, loadHistoricalData]);
+  useEffect(() => {
+    // console.log(currentAssetName);
+    const WS_URL = getBinanceWSUrl(currentAssetName, timeframe);
+    const ws = new WebSocket(WS_URL);
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const k = message.k;
+
+      const candle = {
+        time: k.t / 1000,
+        open: +k.o,
+        high: +k.h,
+        low: +k.l,
+        close: +k.c,
       };
-  
-      return () => ws.close();
-    }, [assetName,timeframe, updateLastCandle]);
-  
+
+      updateLastCandle(candle);
+    };
+
+    return () => ws.close();
+  }, [currentAssetName, timeframe, updateLastCandle]);
+
   const handleAssetChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setAssetName(e.target.value);
+    // console.log(currentAssetName)
+
+    setEntryAssetId(e.target.id);
+    setCurrentAssetName(e.target.value);
   };
-  
+
   const calculateRR = () => {
-    if (entryPrice === "" || stopLoss === "" || takeProfit === "")
-      return "0.00";
+    if (entryPrice === "" || SL === "" || TP === "") return "0.00";
     const entry = Number(entryPrice);
-    const sl = Number(stopLoss);
-    const tp = Number(takeProfit);
+    const sl = Number(SL);
+    const tp = Number(TP);
 
     const risk = Math.abs(entry - sl);
     const reward = Math.abs(tp - entry);
@@ -124,17 +149,23 @@ const AssetChartStockView: React.FC = () => {
                   </span>
                 </div>
                 <select
-                  value={assetName}
+                  value={currentAssetName}
                   onChange={handleAssetChange}
                   className="bg-transparent text-white border-none focus:outline-none cursor-pointer"
                 >
-                  <option className="text-black" value="BTCUSDT">BTCUSDT</option>
-                  <option className="text-black" value="ETHUSDT">ETHUSDT</option>
-                  <option className="text-black" value="SOLUSDT">SOLUSDT</option>
+                  {allAsset.map((asset) => (
+                    <option
+                      className="font-medium text-black"
+                      key={asset.assetId}
+                      value={asset.assetName}
+                    >
+                      {asset.assetName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <h2 className="font-bold text-3xl tracking-tighter">
-                {assetName}
+                {currentAssetName}
               </h2>
             </div>
 
@@ -168,7 +199,7 @@ const AssetChartStockView: React.FC = () => {
                   <label className="text-xs text-gray-400 uppercase tracking-wider">
                     Asset
                   </label>
-                  <p className="text-sm font-medium">{assetName}</p>
+                  <p className="text-sm font-medium">{currentAssetName}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase tracking-wider">
@@ -205,7 +236,7 @@ const AssetChartStockView: React.FC = () => {
                     SL
                   </label>
                   <p className="text-sm font-medium text-[#ef5350]">
-                    {stopLoss}
+                    {SL} ({calculatePercentSL(entryPrice,SL).toFixed(2)}%)
                   </p>
                 </div>
                 <div>
@@ -213,7 +244,7 @@ const AssetChartStockView: React.FC = () => {
                     TP
                   </label>
                   <p className="text-sm font-medium text-[#26a69a]">
-                    {takeProfit}
+                    {TP} ({calculatePercentTP(entryPrice,TP).toFixed(2)}%)
                   </p>
                 </div>
               </div>
@@ -223,16 +254,61 @@ const AssetChartStockView: React.FC = () => {
                   <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
                     Entry Model
                   </label>
-                  <div className="border bg-[#0e0e0e] border-white/10 rounded-lg flex " >
-                  <select
-                    value={entryModel}
-                    onChange={(e) => setEntryModel(e.target.value)}
-                    className="w-[90%] mx-auto bg-[#0e0e0e]  p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
-                  >{userModels.map((model: any) => (
-                    <option className="font-medium" key={model.id}>{model.name}</option>
-                ))}
-                  </select>
+                  <div className="border bg-[#0e0e0e] border-white/10 rounded-lg flex ">
+                    <select
+                      value={entryModelName}
+                      onChange={(e) => {
+                        setEntryModelId(e.target.id);
+                        setEntryModelName(e.target.value);
+                      }}
+                      className="w-[90%] mx-auto bg-[#0e0e0e]  p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
+                    >
+                      {userModels.map((model: any) => (
+                        <option className="font-medium" key={model.modelId}>
+                          {model.modelName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
+                      Leverage
+                    </label>
+                    <input
+                      type="text"
+                      value={leverage}
+                      onChange={(e) => setLeverage(Number(e.target.value))}
+                      className="w-full bg-[#0e0e0e] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
+                      Margin
+                    </label>
+                    <input
+                      type="text"
+                      value={margin}
+                      onChange={(e) => setMargin(Number(e.target.value))}
+                      className="w-full bg-[#0e0e0e] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
+                    />
+                  </div>
                 </div>
+                <div>
+                  <label className="block font-label text-[13px] uppercase tracking-[0.2em] text-[#adaaaa] mb-2">
+                    Set Up Tier
+                  </label>
+                  <select
+                    value={setUpTier}
+                    onChange={(e) => setSetUpTier(e.target.value)}
+                    className="w-full bg-[#1a1919] border border-gray-800 rounded-xl px-4 py-3 text-white font-label focus:border-[#9cff93] outline-none transition-all appearance-none"
+                  >
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 uppercase tracking-wider block mb-2">
@@ -255,7 +331,7 @@ const AssetChartStockView: React.FC = () => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Why did you take this trade?"
-                  className="w-full bg-[#0e0e0e] border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-[#2962ff] min-h-[100px] text-white"
+                  className="w-full bg-[#0e0e0e] border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-[#2962ff] min-h-25 text-white"
                 />
               </div>
             </div>
@@ -277,19 +353,6 @@ const AssetChartStockView: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Floating Buttons */}
-      {/* <div className="fixed bottom-8 right-8 flex flex-col gap-4">
-        <button className="w-14 h-14 bg-[#1a1a1a] text-white rounded-full flex items-center justify-center border border-white/10 hover:bg-[#252525] transition-all active:scale-90">
-          <span className="material-symbols-outlined">camera</span>
-        </button>
-        <button
-          onClick={handleRecordJournal}
-          className="w-14 h-14 bg-[#2962ff] text-white rounded-full flex items-center justify-center shadow-xl shadow-[#2962ff]/20 hover:scale-105 transition-all active:scale-90"
-        >
-          <span className="material-symbols-outlined">add</span>
-        </button>
-      </div> */}
     </div>
   );
 };

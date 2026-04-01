@@ -7,11 +7,14 @@ const ProfilePage: React.FC = () => {
   const logout = useUserStore((state) => state.logout);
   const user = useUserStore((state) => state.user);
   const userModels = useUserStore((state) => state.userModels);
+  const fundAddedHistory = useUserStore((state) => state.fundAddedHistory);
   const fetchUserModels = useUserStore((state) => state.fetchUserModels);
+  const fetchUserFundAdded = useUserStore((state) => state.fetchUserFundAdded);
   const createUserModelStore = useUserStore((state) => state.createUserModel);
   const deleteUserModelStore = useUserStore((state) => state.deleteUserModel);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFundHistory, setShowFundHistory] = useState(false);
   const setUpdateUser = useUserStore((state) => state.setUpdateUser);
 
   const [editData, setEditData] = useState({
@@ -26,7 +29,7 @@ const ProfilePage: React.FC = () => {
   const handleUserEdit = async () => {
     try {
       // console.log(userModels)
-      const resp = await updateUserProfile(user!.id, editData);
+      const resp = await updateUserProfile(user!.userId, editData);
       const freshUser = resp.data.user;
 
       // Update global store
@@ -47,16 +50,16 @@ const ProfilePage: React.FC = () => {
   };
 
   const hdlDeleteUser = async () => {
-    console.log("delete")
+    console.log("delete");
     try {
       await deleteUserProfile();
-      toast.success("This account got delete")
+      toast.success("This account got delete");
       logout();
     } catch (err) {
       console.dir(err);
       const errMsg = err.response?.data.message || err.message;
       // alert(JSON.stringify(err,null,2))
-      toast.error(errMsg,);
+      toast.error(errMsg);
     }
   };
 
@@ -66,7 +69,10 @@ const ProfilePage: React.FC = () => {
   const handleAddModel = async () => {
     if (newModel.trim()) {
       try {
-        await createUserModelStore({ name: newModel.trim(), userId: user.userId });
+        await createUserModelStore({
+          name: newModel.trim(),
+          userId: user!.userId,
+        });
         toast.success("Model added successfully");
         setNewModel("");
         setShowModelInput(false);
@@ -76,15 +82,23 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleDeleteModel = async (id: number) => {
-    console.log(id)
+  const handleDeleteModel = async (modelId: number) => {
+    console.log(modelId);
     if (window.confirm("Are you sure you want to delete this model?")) {
       try {
-        await deleteUserModelStore(id);
+        await deleteUserModelStore(modelId);
         toast.success("Model deleted successfully");
       } catch (err: any) {
         toast.error(err.response?.data?.message || "Failed to delete model");
       }
+    }
+  };
+
+  const handleFundHistory = async (userId: number) => {
+    try {
+await fetchUserFundAdded(userId);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete model");
     }
   };
 
@@ -170,7 +184,7 @@ const ProfilePage: React.FC = () => {
                 {isEditing && (
                   <button
                     onClick={handleUserEdit}
-                    className="bg-gradient-to-br from-[#9cff93] to-[#00fc40] text-[#006413] font-label font-bold px-8 py-3 rounded-xl uppercase tracking-widest text-sm mt-4 active:scale-95 transition-all"
+                    className="bg-linear-to-br from-[#9cff93] to-[#00fc40] text-[#006413] font-label font-bold px-8 py-3 rounded-xl uppercase tracking-widest text-sm mt-4 active:scale-95 transition-all"
                   >
                     Save Changes
                   </button>
@@ -214,12 +228,12 @@ const ProfilePage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {userModels.map((model: any, index: number) => (
                   <div
-                    key={model.id || index}
+                    key={model.modelId || index}
                     className="bg-[#1a1919] border border-gray-800 p-4 rounded-2xl flex justify-between items-center group hover:border-[#9cff93]/30 transition-all"
                   >
-                    <span className="font-medium">{model.name}</span>
+                    <span className="font-medium">{model.modelName}</span>
                     <button
-                      onClick={() => handleDeleteModel(model.id)}
+                      onClick={() => handleDeleteModel(model.modelId)}
                       className="text-gray-600 hover:text-[#ff716c] transition-colors"
                     >
                       <span className="material-symbols-outlined text-lg text-[#ff716c]">
@@ -231,30 +245,75 @@ const ProfilePage: React.FC = () => {
               </div>
             </section>
           </div>
-
-          {/* Right Column: Security/Danger Zone */}
-          <div className="space-y-8">
-            <section className="bg-[#131313] border border-red-900/20 rounded-3xl p-8 shadow-xl">
-              <h2 className="font-headline font-bold text-lg uppercase tracking-tight text-[#ff716c] mb-6">
-                Danger Zone
-              </h2>
-              <p className="text-xs text-[#adaaaa] mb-8 leading-relaxed">
-                Permanently delete your account and all associated trading data.
-                This action cannot be undone.
-              </p>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="w-full bg-[#ff716c]/5 border border-[#ff716c]/20 text-[#ff716c] font-label font-bold py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-[#ff716c]/10 transition-all"
+          <div>
+            <div className="flex flex-col justify-center text-center p-10 gap-3 border rounded-2xl mb-12 border-gray-800 bg-[#131313]">
+              <h2 className="font-headline font-bold text-lg uppercase mb-7">Fund History</h2>
+              <button className="hover:bg-[#084103] border font-label font-bold py-4 rounded-xl uppercase text-xs"
+                onClick={() => {
+                  setShowFundHistory(true);
+                  handleFundHistory(user!.userId);
+                }}
               >
-                Delete Account
+                SHOW
               </button>
-            </section>
+            </div>
+
+            {/* Right Column: Security/Danger Zone */}
+            <div className="space-y-8">
+              <section className="bg-[#131313] border border-red-900/20 rounded-3xl p-8 shadow-xl">
+                <h2 className="text-center font-headline font-bold text-lg uppercase tracking-tight text-[#ff716c] mb-6">
+                  Danger Zone
+                </h2>
+                <p className="text-xs text-[#adaaaa] mb-8 leading-relaxed">
+                  Permanently delete your account and all associated trading
+                  data. This action cannot be undone.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                  }}
+                  className="w-full bg-[#ff716c]/5 border border-[#ff716c]/20 text-[#ff716c] font-label font-bold py-4 rounded-xl uppercase tracking-widest text-xs hover:bg-[#ff716c]/10 transition-all"
+                >
+                  Delete Account
+                </button>
+              </section>
+            </div>
           </div>
         </div>
+        {/* Fund History Modal */}
+        {showFundHistory && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-100 flex items-center justify-center p-6">
+            <div className="bg-[#131313] border-2 border-red-900/30 rounded-3xl max-w-md w-full shadow-[0_0_64px_rgba(255,113,108,0.1)]">
+              <div className="flex justify-center mb-6"></div>
+              <h2 className="text-2xl font-headline font-bold mb-4 text-center uppercase tracking-tight">
+                Fund History
+              </h2>
+              <div>
+                <tbody className=" w-[95%] mx-auto flex flex-col justify-around items-center gap-0.5 ">
+                  {fundAddedHistory.map((historyRow: any, index: number) => (
+                    <tr key={historyRow.fundId || index}
+                    className="flex justify-between gap-10 px-1 pb-1">
+                      <td>  TIME - {new Date(historyRow.date).toLocaleString()}</td>
+                      <td><span className="">$</span>{historyRow.amouth}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </div>
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => setShowFundHistory(false)}
+                  className="py-4 rounded-xl font-label font-bold uppercase tracking-widest text-sm bg-[#444343] hover:bg-[#262626] text-white transition-all my-6 mx-20"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-100 flex items-center justify-center p-6">
             <div className="bg-[#131313] border-2 border-red-900/30 rounded-3xl p-10 max-w-md w-full shadow-[0_0_64px_rgba(255,113,108,0.1)]">
               <div className="flex justify-center mb-6">
                 <span className="material-symbols-outlined text-6xl text-[#ff716c]">
