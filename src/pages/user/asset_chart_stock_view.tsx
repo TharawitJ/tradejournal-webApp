@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
-import BinanceChart from "../../components/chart/Chart";
+import BinanceChart from "../../components/Chart/Chart.tsx";
 import useUserStore from "../../stores/userStore";
 import { useChartStore } from "../../stores/chartStore";
 import { useJournalStore, useFetchAllAsset } from "../../stores/journalStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
 import {
-  calculateRR,
-  calculateWinPnL,
-  calculateLosePnL,
-  calDuration,
+  // calculateRR,
+  // calculateWinPnL,
+  // calculateLosePnL,
+  // calDuration,
   calculatePercentTP,
   calculatePercentSL,
   calPnL,
@@ -24,76 +24,96 @@ const AssetChartStockView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [winLose, setWinLose] = useState("OPEN");
-  const [entryAssetId, setEntryAssetId] = useState("");
-  const [entryModelId, setEntryModelId] = useState("");
-  const [setUpTier, setSetUpTier] = useState("");
-  const [entryModelName, setEntryModelName] = useState("");
+  const user = useUserStore((state) => state.user);
+  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
+  const fetchUserModels = useUserStore((state) => state.fetchUserModels);
+  const allAsset = useFetchAllAsset((state) => state.allAsset);
+  const [setUpTier, setSetUpTier] = useState("A");
   const [entryDateTime, setEntryDateTime] = useState(
     new Date().toISOString().slice(0, 16),
   );
 
+  const [entryModelId, setEntryModelId] = useState(
+    userModels[0]?.modelId || "",
+  );
+  const [entryModelName, setEntryModelName] = useState(
+    userModels[0]?.modelName,
+  );
+  useEffect(() => {
+    fetchUserModels();
+    fetchAllAsset();
+
+    // console.log(userModels);
+    // console.log(userModels[0].modelName);
+  }, []);
+
   const {
-    position,
+    side,
     entryPrice,
     SL,
     TP,
     currentAssetName,
+    currentAssetId,
     timeframe,
     setCurrentAssetName,
+    setCurrentAssetId,
     updateLastCandle,
     loadHistoricalData,
   } = useChartStore();
-  const { setEntries } = useJournalStore();
-  const allAsset = useFetchAllAsset((state) => state.allAsset);
-  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
-
-  useEffect(() => {
-    fetchAllAsset();
-  }, []);
+  const { setEntries, createJournal } = useJournalStore();
 
   const handleRecordJournal = () => {
-    if (!position || entryPrice === "" || SL === "" || TP === "") {
+    if (!side || entryPrice === "") {
       alert("Please set a position (Long/Short) on the chart first!");
       return;
     }
+
     const resultPnL = calPnL(margin, leverage, entryPrice, SL, TP, winLose);
-    console.log("PnL", resultPnL);
+    // console.log("PnL", resultPnL);
     // setPercentageTP(resultPnL.tpPercentChange!)
     // setPercentageSL(resultPnL.slPercentChange!)
     setIsModalOpen(true);
   };
 
   const saveJournal = () => {
+    // console.log("Saving Journal Entry:", tradeData);
+    // useJournalStore.getState().entries
+    setEntryDateTime(new Date().toISOString().slice(0, 16));
     const tradeData = {
-      assetId: 1, // Placeholder: need logic to map currentAssetName to assetId
-      entryModelId: 1, // Placeholder: need selection logic
+      userId: user!.userId,
+      entryAssetId: currentAssetId,
+      entryAssetName: currentAssetName,
+      entryModelId: entryModelId,
+      entryModelName: entryModelName,
       setUpTier: "A",
       entryPrice: Number(entryPrice),
       SL: Number(SL),
       TP: Number(TP),
-      margin, // Placeholder
-      riskPerTrade: 1, // Placeholder
+      margin,
+      riskPerTrade: Number(calculateRR(SL, TP)),
       notes,
-      entryModelName,
       entryDateTime,
       leverage,
+      side
     };
-
-    // console.log("Saving Journal Entry:", tradeData);
-
-    setEntries(tradeData);
+    console.log("saveJournal", tradeData);
+    try {
+      createJournal(tradeData);
+      alert("Journal recorded successfully!");
+    } catch (err) {
+      alert(err);
+    }
     setIsModalOpen(false);
     setNotes("");
+    setEntries(tradeData);
     setEntryModelName("");
-    setEntryDateTime(new Date().toISOString().slice(0, 16));
-    alert("Journal recorded successfully!");
   };
 
   useEffect(() => {
     loadHistoricalData();
   }, [currentAssetName, loadHistoricalData]);
+
   useEffect(() => {
-    // console.log(currentAssetName);
     const WS_URL = getBinanceWSUrl(currentAssetName, timeframe);
     const ws = new WebSocket(WS_URL);
 
@@ -116,14 +136,32 @@ const AssetChartStockView: React.FC = () => {
   }, [currentAssetName, timeframe, updateLastCandle]);
 
   const handleAssetChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    // console.log(currentAssetName)
-
-    setEntryAssetId(e.target.id);
+    const selectedAssetId = allAsset.find(
+      (a) => a.assetName === e.target.value,
+    );
+    console.log(selectedAssetId)
+    setCurrentAssetId(Number(selectedAssetId!.assetId));
     setCurrentAssetName(e.target.value);
+    // console.log(typeof selectedAssetId!.assetId);
+    // console.log(currentAssetName);
+    console.log("Asset ID Type:", typeof selectedAssetId?.assetId); 
+    // Likely prints "string"
   };
 
-  const calculateRR = () => {
-    if (entryPrice === "" || SL === "" || TP === "") return "0.00";
+  const handleUserModelChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const selectedModelId = userModels.find(
+      (m) => m.modelName === e.target.value,
+    );
+    // console.log("selectedModelId",selectedModelId!.modelId)
+    setEntryModelId(Number(selectedModelId!.modelId));
+    setEntryModelName(e.target.value);
+    // console.log("entryModelName",e.target.value);
+    console.log("Model ID Type:", typeof selectedModelId?.modelId); 
+    // Likely prints "number"
+  };
+
+  const calculateRR = (SL: number, TP: number) => {
+    if (entryPrice === "") return "0.00";
     const entry = Number(entryPrice);
     const sl = Number(SL);
     const tp = Number(TP);
@@ -150,7 +188,7 @@ const AssetChartStockView: React.FC = () => {
                 </div>
                 <select
                   value={currentAssetName}
-                  onChange={handleAssetChange}
+                  onChange={(e) => handleAssetChange(e)}
                   className="bg-transparent text-white border-none focus:outline-none cursor-pointer"
                 >
                   {allAsset.map((asset) => (
@@ -206,9 +244,9 @@ const AssetChartStockView: React.FC = () => {
                     Side
                   </label>
                   <p
-                    className={`text-sm font-bold ${position === "LONG" ? "text-[#26a69a]" : "text-[#ef5350]"}`}
+                    className={`text-sm font-bold ${side === "LONG" ? "text-[#26a69a]" : "text-[#ef5350]"}`}
                   >
-                    {position?.toUpperCase()}
+                    {side?.toUpperCase()}
                   </p>
                 </div>
               </div>
@@ -225,7 +263,7 @@ const AssetChartStockView: React.FC = () => {
                     RR Ratio
                   </label>
                   <p className="text-sm font-bold text-[#2962ff]">
-                    1 : {calculateRR()}
+                    1 : {calculateRR(SL, TP)}
                   </p>
                 </div>
               </div>
@@ -236,7 +274,7 @@ const AssetChartStockView: React.FC = () => {
                     SL
                   </label>
                   <p className="text-sm font-medium text-[#ef5350]">
-                    {SL} ({calculatePercentSL(entryPrice,SL).toFixed(2)}%)
+                    {SL} ({calculatePercentSL(entryPrice, SL).toFixed(2)}%)
                   </p>
                 </div>
                 <div>
@@ -244,7 +282,7 @@ const AssetChartStockView: React.FC = () => {
                     TP
                   </label>
                   <p className="text-sm font-medium text-[#26a69a]">
-                    {TP} ({calculatePercentTP(entryPrice,TP).toFixed(2)}%)
+                    {TP} ({calculatePercentTP(entryPrice, TP).toFixed(2)}%)
                   </p>
                 </div>
               </div>
@@ -257,13 +295,11 @@ const AssetChartStockView: React.FC = () => {
                   <div className="border bg-[#0e0e0e] border-white/10 rounded-lg flex ">
                     <select
                       value={entryModelName}
-                      onChange={(e) => {
-                        setEntryModelId(e.target.id);
-                        setEntryModelName(e.target.value);
-                      }}
+                      onChange={(e) => handleUserModelChange(e)}
                       className="w-[90%] mx-auto bg-[#0e0e0e]  p-2 text-sm focus:outline-none focus:border-[#2962ff] text-white"
                     >
                       {userModels.map((model: any) => (
+                        // console.log(model),
                         <option className="font-medium" key={model.modelId}>
                           {model.modelName}
                         </option>

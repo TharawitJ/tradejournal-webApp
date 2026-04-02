@@ -9,7 +9,7 @@ declare global {
 
   interface EntryModel {
     modelId: number;
-    name: string;
+    modelName: string;
     userId: number;
   }
   interface FundHistory {

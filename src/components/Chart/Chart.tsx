@@ -17,7 +17,7 @@ export default function BinanceChart() {
     setTimeframe,
     timezone,
     setTimezone,
-    position,
+    side,
     entryPrice,
     SL,
     TP,
@@ -172,7 +172,7 @@ export default function BinanceChart() {
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "LONG" ? "#26a69a" : "transparent",
+              background: side === "LONG" ? "#26a69a" : "transparent",
               border: "1px solid #26a69a",
               color: "white",
               borderRadius: "4px",
@@ -188,7 +188,7 @@ export default function BinanceChart() {
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "SHORT" ? "#ef5350" : "transparent",
+              background: side === "SHORT" ? "#ef5350" : "transparent",
               border: "1px solid #ef5350",
               color: "white",
               borderRadius: "4px",
@@ -230,9 +230,9 @@ export default function BinanceChart() {
           />
         </div>
 
-        {position && (
+        {side && (
           <div style={{ marginTop: "5px", fontSize: "10px", color: "#868993" }}>
-            Current Position: <span style={{ color: position === "LONG" ? "#26a69a" : "#ef5350", fontWeight: "bold" }}>{position.toUpperCase()}</span>
+            Current Position: <span style={{ color: side === "LONG" ? "#26a69a" : "#ef5350", fontWeight: "bold" }}>{side.toUpperCase()}</span>
           </div>
         )}
       </div>
@@ -243,7 +243,7 @@ export default function BinanceChart() {
             <PriceLine
               price={Number(entryPrice)}
               options={{
-                title: position === "LONG" ? "ENTRY LONG" : "ENTRY SHORT",
+                title: side === "LONG" ? "ENTRY LONG" : "ENTRY SHORT",
                 color: "white",
                 lineWidth: 1,
                 axisLabelVisible: true,

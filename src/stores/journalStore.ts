@@ -12,7 +12,7 @@ interface JournalState {
   entries: JournalEntry[];
   setEntries: (entries: JournalEntry[]) => void;
   fetchJournal: () => void;
-  createJournal: (id: string | number, body: JournalEntry[]) => void;
+  createJournal: (body: JournalEntry[]) => void;
   deleteJournal: (id: string | number) => void;
   updateJournal: (id: string | number, updates: Partial<JournalEntry>) => void;
 }
@@ -56,6 +56,7 @@ export const useJournalStore = create<JournalState>()(
 
       createJournal: async (body) => {
         try {
+          console.log("createJournal",body)
           await apiCreateJournal(body);
 
           const resp = await apiGetAllJournal();

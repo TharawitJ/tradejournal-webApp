@@ -41,7 +41,9 @@ const userRouter = createBrowserRouter([
 ]);
 
 function AppRouter() {
+
   const user = useUserStore(state => state.user)
+  // const token = useUserStore(state => state.token)
   const finalRouter = user ? userRouter : guestRouter
   return (
     <Suspense

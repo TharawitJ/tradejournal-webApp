@@ -46,8 +46,8 @@ const useUserStore = create<UserState>()(
         try {
           const resp = await getUserFundHistory(userId);
           set({ fundAddedHistory: resp.data.userFund || [] });
-          console.log("userFund",resp.data.userFund);
-          console.log("userFund",resp.data.userFund[0].amouth);
+          // console.log("userFund",resp.data.userFund);
+          // console.log("userFund",resp.data.userFund[0].amouth);
         } catch (err) {
           console.error("Failed to fetch user fund history");
         }

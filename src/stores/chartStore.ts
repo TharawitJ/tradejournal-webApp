@@ -15,10 +15,11 @@ interface ChartState {
   data: ChartData[];
   lastPrice: number | null;
   timeframe: string;
-  position: "LONG" | "SHORT";
+  side: "LONG" | "SHORT" | null;
   entryPrice: number | "";
   SL: number | "";
   TP: number | "";
+  currentAssetId:number;
   currentAssetName: string;
   timezone: string;
 
@@ -32,7 +33,8 @@ interface ChartState {
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
   setTimezone: (tz: string) => void;
-  setPosition: (pos: "LONG" | "SHORT" ) => void;
+  setPosition: (pos: "LONG" | "SHORT" |null ) => void;
+  setCurrentAssetId: (asset: string) => void;
   setCurrentAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
   setSL: (price: number | "") => void;
@@ -65,11 +67,12 @@ export const useChartStore = create<ChartState>((set, get) => ({
   data: [],
   lastPrice: null,
   timeframe: localStorage.getItem("selectedTimeframe") || "1d",
-  position:null,
+  side:null,
   entryPrice: "",
   SL: "",
   TP: "",
-  currentAssetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
+  currentAssetName: localStorage.getItem("selectedAssetName") || "BTCUSDT",
+  currentAssetId: localStorage.getItem("selectedAssetId") || 1,
   timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
   maxPrice: null,
@@ -126,20 +129,24 @@ export const useChartStore = create<ChartState>((set, get) => ({
     localStorage.setItem("selectedTimezone", tz);
     set({ timezone: tz });
   },
-  setPosition: (pos) => set({ position: pos }),
-  setCurrentAssetName: (asset) => {
-    localStorage.setItem("selectedAsset", asset);
-    set({ currentAssetName: asset });
+  setPosition: (pos) => set({ side: pos }),
+  setCurrentAssetName: (assetName) => {
+    localStorage.setItem("selectedAssetName", assetName);
+    set({ currentAssetName: assetName });
+  },
+  setCurrentAssetId:(assetId)=>{
+    localStorage.setItem("selectedAssetId",assetId)
+    set({currentAssetId:assetId})
   },
   setEntryPrice: (price) => set({ entryPrice: price }),
   setSL: (price) => set({ SL: price }),
   setTP: (price) => set({ TP: price }),
 
   togglePosition: (type) => {
-    const { position, lastPrice } = get();
-    if (position === type) {
+    const { side, lastPrice } = get();
+    if (side === type) {
       set({
-        position: "OPEN",
+        side: "LONG",
         entryPrice: "",
         SL: "",
         TP: "",
@@ -153,13 +160,13 @@ export const useChartStore = create<ChartState>((set, get) => ({
         const tp = type === "LONG" ? entry + offsetTP : entry - offsetTP;
 
         set({
-          position: type,
+          side: type,
           entryPrice: entry,
           SL: Number(sl.toFixed(3)),
           TP: Number(tp.toFixed(3)),
         });
       } else {
-        set({ position: type });
+        set({ side: type });
       }
     }
   },
