@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useJournalStore, useFetchAllAsset } from "../../stores/journalStore";
-import type { JournalEntry } from "../../stores/journalStore";
+import { useJournalStore } from "../../stores/journalStore";
+// import type { JournalEntry } from "../../stores/journalStore";
 import useUserStore from "../../stores/userStore";
-import {
-  getDashboardRR,
-  getDashboardWinRate,
-  getDashboardPnL,
-} from "../../api/apiMain";
+// import {
+//   getDashboardRR,
+//   getDashboardWinRate,
+//   getDashboardPnL,
+// } from "../../api/apiMain";
 import { toast } from "react-toastify";
 import JournalCard from "../../components/journal/journal";
 
 const JournalPage: React.FC = () => {
-  const { entries, updateJournal, setEntries, deleteJournal, fetchJournal } =
+  const { entries, updateJournal, setEntries,allAsset, deleteJournal, fetchJournal } =
     useJournalStore();
 
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
@@ -25,9 +25,9 @@ const JournalPage: React.FC = () => {
 
   // Modal form state
   const [form, setForm] = useState({
-    entryAssetId: "",
+    entryAssetId:0,
     entryAssetName: "",
-    entryModelId: "",
+    entryModelId:0,
     entryModelName: "",
     setUpTier: "A",
     entryPrice: "",
@@ -50,48 +50,10 @@ const JournalPage: React.FC = () => {
 
   // POST if resp.status === 200 GET data back update state re-render
 
-  // const fetchJournals = async () => {
-  //   try {
-  //     const resp = await getAllJournal();
-  //     // console.log(resp.data);
-  //     setEntries(resp.data);
-  //   } catch (err) {
-  //     console.error("Failed to get journals", err);
-  //   }
-  // };
-  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
-  const fetchUserModels = useUserStore((state) => state.fetchUserModels);
-  // const [entryAssetId, setEntryAssetId] = useState("");
-  // const [entryModelId, setEntryModelId] = useState("");
-  // const [currentAssetName, setCurrentAssetName] = useState("");
-  // const [entryModelId, setEntryModelId] = useState("");
-  // const [entryModelName, setEntryModelName] = useState("");
-
-  const allAsset = useFetchAllAsset((state) => state.allAsset);
   const userModels = useUserStore((state) => state.userModels);
-
-  const fetchStats = async () => {
-    try {
-      const [rrResp, winResp, pnlResp] = await Promise.all([
-        getDashboardRR(),
-        getDashboardWinRate(),
-        getDashboardPnL(),
-      ]);
-
-      setStats({
-        avgRR: rrResp.data.AverageRR || 0,
-        winRate: winResp.data.winrate || 0,
-        totalPnL:
-          pnlResp.data.result?.reduce(
-            (acc: number, curr: any) => acc + (curr.profitPosition || 0),
-            0,
-          ) || 0,
-      });
-    } catch (err) {
-      console.error("Failed to fetch dashboard stats", err);
-    }
-  };
-
+  const fetchUserModels = useUserStore((state) => state.fetchUserModels);
+  
+  // console.log("asd",allAsset)
   useEffect(() => {
     fetchJournal();
     // fetchStats();
@@ -100,9 +62,9 @@ const JournalPage: React.FC = () => {
   const handleEditClick = (entry: JournalEntry) => {
     setEditingEntry(entry);
     setForm({
-      entryAssetId: entry.entryAssetId?.toString() || "",
+      entryAssetId: entry.entryAssetId,
       entryAssetName: entry.entryAssetName?.toString() || "",
-      entryModelId: entry.entryModelId?.toString() || "",
+      entryModelId: entry.entryModelId,
       entryModelName: entry.entryModelName?.toString() || "",
       setUpTier: entry.setUpTier || "A",
       entryPrice: entry.entryPrice.toString(),
@@ -130,9 +92,9 @@ const JournalPage: React.FC = () => {
     setEditingEntry(entry);
     try {
       const data = {
-        entryAssetId: parseInt(form.entryAssetId),
+        entryAssetId: form.entryAssetId,
         entryAssetName: form.entryAssetName,
-        entryModelId: parseInt(form.entryModelId),
+        entryModelId: form.entryModelId,
         entryModelName: form.entryModelName,
         setUpTier: form.setUpTier,
         entryPrice: parseFloat(form.entryPrice),
@@ -153,15 +115,15 @@ const JournalPage: React.FC = () => {
           : undefined,
         positionPnL: form.positionPnL
           ? parseFloat(form.positionPnL)
-          : undefined,
+          : 0,
         duration: form.duration ? parseInt(form.duration) : undefined,
       };
       console.log(data.entryAssetName);
       console.log(data.entryAssetId);
       console.log(allAsset);
 
-      if ((editingEntry.recordId, data)) {
-        updateJournal(editingEntry.recordId, data);
+      if ((editingEntry!.recordId, data)) {
+        updateJournal(editingEntry!.recordId, data);
         toast.success("Trade updated successfully");
         setEditingEntry(null);
       } else {
@@ -170,7 +132,7 @@ const JournalPage: React.FC = () => {
         toast.success("Trade added successfully");
         setIsAdding(false);
       }
-      fetchStats();
+      // fetchStats();
     } catch (err) {
       toast.error(
         editingEntry ? "Failed to update trade" : "Failed to add trade",
@@ -183,14 +145,14 @@ const JournalPage: React.FC = () => {
       try {
         deleteJournal(recordId);
         toast.success("Trade deleted");
-        fetchStats();
+        // fetchStats();
       } catch (err) {
         toast.error("Failed to delete trade");
       }
     }
   };
   useEffect(() => {
-    fetchAllAsset();
+    // fetchAllAsset();
     fetchUserModels();
   }, []);
   // console.log(userModels);
@@ -207,7 +169,7 @@ const JournalPage: React.FC = () => {
     try {
       // await apiUpdateJournal(id.toString(), { winLose: nextResult });
       updateJournal(id, { winLose: nextResult });
-      fetchStats();
+      // fetchStats();
     } catch (err) {
       toast.error("Failed to update result");
     }
@@ -284,7 +246,7 @@ const JournalPage: React.FC = () => {
                         // 3. Update BOTH at the same time. This prevents the "3" vs "BTC" mixup.
                         setForm({
                           ...form,
-                          entryAssetId: selectedAsset.assetId, // Becomes 1
+                          entryAssetId: Number(selectedAsset.assetId), // Becomes 1
                           entryAssetName: selectedAsset.assetName, // Becomes "BTCUSDT"
                         });
                       }

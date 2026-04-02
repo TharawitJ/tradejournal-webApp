@@ -3,7 +3,7 @@ import type { ChangeEvent } from "react";
 import BinanceChart from "../../components/Chart/Chart.tsx";
 import useUserStore from "../../stores/userStore";
 import { useChartStore } from "../../stores/chartStore";
-import { useJournalStore, useFetchAllAsset } from "../../stores/journalStore";
+import { useJournalStore } from "../../stores/journalStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
 import {
   // calculateRR,
@@ -16,7 +16,7 @@ import {
 } from "../../commons/utils/PnLfunction.ts";
 
 const AssetChartStockView: React.FC = () => {
-  const userModels = useUserStore((state) => state.userModels);
+
   const [leverage, setLeverage] = useState(10);
   const [margin, setMargin] = useState(1);
   // const [percentageTP, setPercentageTP] = useState();
@@ -25,20 +25,22 @@ const AssetChartStockView: React.FC = () => {
   const [notes, setNotes] = useState("");
   const [winLose, setWinLose] = useState("OPEN");
   const user = useUserStore((state) => state.user);
-  const fetchAllAsset = useFetchAllAsset((state) => state.fetchAllAsset);
+  const fetchAllAsset = useJournalStore((state) => state.fetchAllAsset);
+  const allAsset = useJournalStore((state) => state.allAsset);
   const fetchUserModels = useUserStore((state) => state.fetchUserModels);
-  const allAsset = useFetchAllAsset((state) => state.allAsset);
+    const userModels = useUserStore((state) => state.userModels);
   const [setUpTier, setSetUpTier] = useState("A");
   const [entryDateTime, setEntryDateTime] = useState(
     new Date().toISOString().slice(0, 16),
   );
-
+  
   const [entryModelId, setEntryModelId] = useState(
-    userModels[0]?.modelId || "",
+    userModels[0]?.modelId,
   );
   const [entryModelName, setEntryModelName] = useState(
     userModels[0]?.modelName,
   );
+  // console.log(entryModelName)
   useEffect(() => {
     fetchUserModels();
     fetchAllAsset();
@@ -63,6 +65,7 @@ const AssetChartStockView: React.FC = () => {
   const { setEntries, createJournal } = useJournalStore();
 
   const handleRecordJournal = () => {
+    console.log("entryModelName",entryModelName)
     if (!side || entryPrice === "") {
       alert("Please set a position (Long/Short) on the chart first!");
       return;
@@ -81,9 +84,9 @@ const AssetChartStockView: React.FC = () => {
     setEntryDateTime(new Date().toISOString().slice(0, 16));
     const tradeData = {
       userId: user!.userId,
-      entryAssetId: currentAssetId,
+      entryAssetId: Number(currentAssetId),
       entryAssetName: currentAssetName,
-      entryModelId: entryModelId,
+      entryModelId: Number(entryModelId),
       entryModelName: entryModelName,
       setUpTier: "A",
       entryPrice: Number(entryPrice),
@@ -96,7 +99,7 @@ const AssetChartStockView: React.FC = () => {
       leverage,
       side
     };
-    console.log("saveJournal", tradeData);
+    // console.log("saveJournal", tradeData);
     try {
       createJournal(tradeData);
       alert("Journal recorded successfully!");

@@ -17,14 +17,18 @@ declare global {
     date: string;
     amouth: number;
   }
+  interface allAsset {
+    assetId: number;
+    assetName: string;
+  }
 
   interface JournalEntry {
     recordId: string;
-    userId: string | number;
-    entryAssetId: string | number;
-    entryAssetName:string| number;
-    entryModelId:string | number;
-    entryModelName:string| number;
+    userId: number;
+    entryAssetId: number;
+    entryAssetName: string;
+    entryModelId: number;
+    entryModelName: string;
     setUpTier: string;
     entryDateTime?: string | number;
     exitDateTime?: string | number;
@@ -48,6 +52,6 @@ declare global {
     // Frontend display helpers
     assetName?: string;
     entryModel?: string;
-    side?: "LONG" | "SHORT";
+    side?: ""|"LONG" | "SHORT";
   }
 }

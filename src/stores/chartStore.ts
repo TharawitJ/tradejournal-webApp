@@ -15,7 +15,7 @@ interface ChartState {
   data: ChartData[];
   lastPrice: number | null;
   timeframe: string;
-  side: "LONG" | "SHORT" | null;
+  side: "LONG" | "SHORT" | "";
   entryPrice: number | "";
   SL: number | "";
   TP: number | "";
@@ -33,8 +33,8 @@ interface ChartState {
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
   setTimezone: (tz: string) => void;
-  setPosition: (pos: "LONG" | "SHORT" |null ) => void;
-  setCurrentAssetId: (asset: string) => void;
+  setPosition: (pos: "LONG" | "SHORT" | "") => void;
+  setCurrentAssetId: (asset: number|string) => void;
   setCurrentAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
   setSL: (price: number | "") => void;
@@ -67,12 +67,12 @@ export const useChartStore = create<ChartState>((set, get) => ({
   data: [],
   lastPrice: null,
   timeframe: localStorage.getItem("selectedTimeframe") || "1d",
-  side:null,
+  side:"",
   entryPrice: "",
   SL: "",
   TP: "",
   currentAssetName: localStorage.getItem("selectedAssetName") || "BTCUSDT",
-  currentAssetId: localStorage.getItem("selectedAssetId") || 1,
+  currentAssetId: Number(localStorage.getItem("selectedAssetId")) || 1,
   timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
   maxPrice: null,
@@ -135,8 +135,9 @@ export const useChartStore = create<ChartState>((set, get) => ({
     set({ currentAssetName: assetName });
   },
   setCurrentAssetId:(assetId)=>{
-    localStorage.setItem("selectedAssetId",assetId)
-    set({currentAssetId:assetId})
+    set({currentAssetId:Number(assetId)})
+    localStorage.setItem("selectedAssetId",assetId.toString())
+    // localStorage converts data to string internally
   },
   setEntryPrice: (price) => set({ entryPrice: price }),
   setSL: (price) => set({ SL: price }),
@@ -146,7 +147,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
     const { side, lastPrice } = get();
     if (side === type) {
       set({
-        side: "LONG",
+        side: "",
         entryPrice: "",
         SL: "",
         TP: "",

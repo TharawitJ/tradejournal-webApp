@@ -7,43 +7,53 @@ import {
   apiUpdateJournal,
   apiDeleteJournal,
 } from "../api/apiMain";
+// import { all } from "axios";
 
 interface JournalState {
   entries: JournalEntry[];
+  allAsset: allAsset[];
+  fetchAllAsset: () => Promise<void>;
   setEntries: (entries: JournalEntry[]) => void;
   fetchJournal: () => void;
   createJournal: (body: JournalEntry[]) => void;
   deleteJournal: (id: string | number) => void;
   updateJournal: (id: string | number, updates: Partial<JournalEntry>) => void;
 }
-interface allAsset {
-  assetId: number;
-  assetName: string;
-}
-interface allAssetState {
-  allAsset: allAsset[];
-  fetchAllAsset: () => Promise<void>;
-}
 
-// allAsset: allAsset[]
-export const useFetchAllAsset = create<allAssetState>((set) => ({
-  allAsset: [],
-  fetchAllAsset: async () => {
-    try {
-      const resp = await getAllAsset();
-      set({ allAsset: resp.data.data || [] });
-      // console.log(resp.data.data);
-    } catch (err) {
-      console.error("Failed to fetch user fund history");
-    }
-  },
-}));
+// interface allAssetState {
+
+// }
+
+// // allAsset: allAsset[]
+// export const useFetchAllAsset = create<allAssetState>((set) => ({
+//   allAsset: [],
+//   fetchAllAsset: async () => {
+//     try {
+//       const resp = await getAllAsset();
+//       set({ allAsset: resp.data.data || [] });
+//       // console.log(resp.data.data);
+//     } catch (err) {
+//       console.error("Failed to fetch user fund history");
+//     }
+//   },
+// }));
 
 export const useJournalStore = create<JournalState>()(
   persist(
     (set) => ({
       entries: [],
+      allAsset: [],
       setEntries: (entries) => set({ entries }),
+      fetchAllAsset: async () => {
+        try {
+          const resp = await getAllAsset();
+          console.log(resp)
+          set({ allAsset: resp.data.data || [] });
+          // console.log(resp.data.data);
+        } catch (err) {
+          console.error("Failed to fetch user fund history");
+        }
+      },
       fetchJournal: async () => {
         try {
           const resp = await apiGetAllJournal();
@@ -56,11 +66,8 @@ export const useJournalStore = create<JournalState>()(
 
       createJournal: async (body) => {
         try {
-          console.log("createJournal",body)
           await apiCreateJournal(body);
-
           const resp = await apiGetAllJournal();
-          console.log("createJournal", resp.data);
 
           set({ data: resp.data.journalFound || [] });
         } catch (err) {
@@ -78,7 +85,7 @@ export const useJournalStore = create<JournalState>()(
         }
       },
 
-      updateJournal: async (recordId:string|number, updates) => {
+      updateJournal: async (recordId: string | number, updates) => {
         try {
           const resp = await apiUpdateJournal(recordId, updates);
           console.log("updateJournalStore", resp.data);
