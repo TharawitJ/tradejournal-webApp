@@ -17,11 +17,11 @@ const JournalPage: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
-  const [stats, setStats] = useState({
-    avgRR: 0,
-    winRate: 0,
-    totalPnL: 0,
-  });
+  // const [stats, setStats] = useState({
+  //   avgRR: 0,
+  //   winRate: 0,
+  //   totalPnL: 0,
+  // });
 
   // Modal form state
   const [form, setForm] = useState({
@@ -118,9 +118,6 @@ const JournalPage: React.FC = () => {
           : 0,
         duration: form.duration ? parseInt(form.duration) : undefined,
       };
-      console.log(data.entryAssetName);
-      console.log(data.entryAssetId);
-      console.log(allAsset);
 
       if ((editingEntry!.recordId, data)) {
         updateJournal(editingEntry!.recordId, data);

@@ -23,7 +23,7 @@ declare global {
   }
 
   interface JournalEntry {
-    recordId: string;
+    recordId: number;
     userId: number;
     entryAssetId: number;
     entryAssetName: string;

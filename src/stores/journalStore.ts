@@ -16,8 +16,8 @@ interface JournalState {
   setEntries: (entries: JournalEntry[]) => void;
   fetchJournal: () => void;
   createJournal: (body: JournalEntry[]) => void;
-  deleteJournal: (id: string | number) => void;
-  updateJournal: (id: string | number, updates: Partial<JournalEntry>) => void;
+  deleteJournal: (id: number) => void;
+  updateJournal: (id: number, updates: Partial<JournalEntry>) => void;
 }
 
 // interface allAssetState {
@@ -47,7 +47,7 @@ export const useJournalStore = create<JournalState>()(
       fetchAllAsset: async () => {
         try {
           const resp = await getAllAsset();
-          console.log(resp)
+          // console.log(resp)
           set({ allAsset: resp.data.data || [] });
           // console.log(resp.data.data);
         } catch (err) {
@@ -74,9 +74,9 @@ export const useJournalStore = create<JournalState>()(
           console.error("Failed to create journal");
         }
       },
-      deleteJournal: async (recordId) => {
+      deleteJournal: async (recordId:number) => {
         try {
-          await apiDeleteJournal(recordId.toString());
+          await apiDeleteJournal(recordId);
           set((state) => ({
             entries: state.entries.filter((e) => e.recordId !== recordId),
           }));
@@ -85,8 +85,9 @@ export const useJournalStore = create<JournalState>()(
         }
       },
 
-      updateJournal: async (recordId: string | number, updates) => {
+      updateJournal: async (recordId:number, updates) => {
         try {
+          console.log(typeof recordId)
           const resp = await apiUpdateJournal(recordId, updates);
           console.log("updateJournalStore", resp.data);
           set((state) => ({
