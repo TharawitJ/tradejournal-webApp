@@ -31,8 +31,13 @@ const chartOptions = {
     borderColor: "rgba(197, 203, 206, 0.1)",
     timeVisible: true,
     secondsVisible: false,
-    shiftVisibleRangeOnNewBar: true,
-    rightOffset: 10,
+    shiftVisibleRangeOnNewBar: false,
+    rightOffset: 24,
+    barSpacing: 3,
+    minBarSpacing: 0.5,
+    fixLeftEdge: true,
+    fixRightEdge: false,
+    lockVisibleTimeRangeOnResize: true
   },
 };
 const seriesOptions = {
