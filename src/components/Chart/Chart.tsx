@@ -3,12 +3,17 @@ import {
   Chart,
   CandlestickSeries,
   PriceLine,
+  TimeScale,
 } from "lightweight-charts-react-components";
 import { LineStyle } from "lightweight-charts";
 import { useChartStore } from "../../stores/chartStore";
 import { getBinanceWSUrl } from "../../api/apiChart";
-import {TIMEFRAMES, TIMEZONES, chartOptions, seriesOptions} from "../../commons/chartOption"
-
+import {
+  TIMEFRAMES,
+  TIMEZONES,
+  chartOptions,
+  seriesOptions,
+} from "../../commons/chartOption";
 
 export default function BinanceChart() {
   const {
@@ -17,7 +22,7 @@ export default function BinanceChart() {
     setTimeframe,
     timezone,
     setTimezone,
-    position,
+    side,
     entryPrice,
     SL,
     TP,
@@ -30,7 +35,8 @@ export default function BinanceChart() {
     updateLastCandle,
   } = useChartStore();
 
-  const timezoneOffset = TIMEZONES.find(tz => tz.label === timezone)?.offset || 0;
+  const timezoneOffset =
+    TIMEZONES.find((tz) => tz.label === timezone)?.offset || 0;
 
   // 📥 Load historical data
   useEffect(() => {
@@ -39,7 +45,7 @@ export default function BinanceChart() {
 
   // 🔌 WebSocket live updates
   useEffect(() => {
-    const WS_URL = getBinanceWSUrl(currentAssetName,timeframe);
+    const WS_URL = getBinanceWSUrl(currentAssetName, timeframe);
     const ws = new WebSocket(WS_URL);
 
     ws.onmessage = (event) => {
@@ -47,7 +53,7 @@ export default function BinanceChart() {
       const k = message.k;
 
       const candle = {
-        time: (k.t / 1000) + timezoneOffset,
+        time: k.t / 1000 + timezoneOffset,
         open: +k.o,
         high: +k.h,
         low: +k.l,
@@ -58,23 +64,25 @@ export default function BinanceChart() {
     };
 
     return () => ws.close();
-  }, [currentAssetName,timeframe, timezoneOffset, updateLastCandle]);
+  }, [currentAssetName, timeframe, timezoneOffset, updateLastCandle]);
 
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
-      {/* Timeframe Buttons Overlay */}
-      <div style={{
-        position: "absolute",
-        top: 10,
-        right: 10,
-        zIndex: 10,
-        display: "flex",
-        gap: "5px",
-        background: "rgba(20, 20, 20)",
-        padding: "5px",
-        borderRadius: "4px",
-        border: "1px solid rgba(255,255,255,0.1)",
-      }}>
+      {/* ... (rest of overlays) */}
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 10,
+          display: "flex",
+          gap: "5px",
+          background: "rgba(20, 20, 20)",
+          padding: "5px",
+          borderRadius: "4px",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
         {TIMEFRAMES.map((tf) => (
           <button
             key={tf}
@@ -88,7 +96,7 @@ export default function BinanceChart() {
               borderRadius: "2px",
               cursor: "pointer",
               fontWeight: timeframe === tf ? "bold" : "normal",
-              transition: "all 0.2s"
+              transition: "all 0.2s",
             }}
           >
             {tf.toUpperCase()}
@@ -97,32 +105,36 @@ export default function BinanceChart() {
       </div>
 
       {/* Timezone Selector Overlay (Bottom Right) */}
-      <div style={{
-        position: "absolute",
-        bottom: 0,
-        right: 0,
-        zIndex: 10,
-        background: "#1a1a1a",
-        padding: "0 5px",
-        height: "26px", // Typical height of the time bar area
-        display: "flex",
-        alignItems: "center",
-        // borderTop: "1px solid rgba(255,255,255,0.1)",
-        // borderLeft: "1px solid rgba(255,255,255,0.1)",
-      }}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          right: 0,
+          zIndex: 10,
+          background: "#1a1a1a",
+          padding: "0 5px",
+          height: "26px", // Typical height of the time bar area
+          display: "flex",
+          alignItems: "center",
+          // borderTop: "1px solid rgba(255,255,255,0.1)",
+          // borderLeft: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
         <div style={{ position: "relative", display: "inline-block" }}>
           {/* Hidden span to measure text width */}
-          <span style={{
-            visibility: "hidden",
-            whiteSpace: "pre",
-            fontSize: "11px",
-            fontWeight: "bold",
-            padding: "0 10px", // space for select arrow/padding
-            display: "inline-block"
-          }}>
+          <span
+            style={{
+              visibility: "hidden",
+              whiteSpace: "pre",
+              fontSize: "11px",
+              fontWeight: "bold",
+              padding: "0 10px", // space for select arrow/padding
+              display: "inline-block",
+            }}
+          >
             {timezone}
           </span>
-          <select 
+          <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
             style={{
@@ -140,60 +152,66 @@ export default function BinanceChart() {
               fontWeight: "bold",
             }}
           >
-            {TIMEZONES.map(tz => (
-              <option key={tz.label} value={tz.label} style={{ background: "#1e222d" }}>
+            {TIMEZONES.map((tz) => (
+              <option
+                key={tz.label}
+                value={tz.label}
+                style={{ background: "#1e222d" }}
+              >
                 {tz.label}
               </option>
             ))}
           </select>
-          </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Position Controls Overlay */}
-      <div style={{
-        position: "absolute",
-        top: 20,
-        left: 30,
-        zIndex: 10,
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        background: "rgba(20, 20, 20, 0.95)",
-        padding: "15px",
-        borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.1)",
-        color: "white",
-        fontSize: "12px",
-        width: "200px"
-      }}>
+      {/* Position Controls Overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 30,
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          background: "rgba(20, 20, 20, 0.95)",
+          padding: "15px",
+          borderRadius: "8px",
+          border: "1px solid rgba(255,255,255,0.1)",
+          color: "white",
+          fontSize: "12px",
+          width: "200px",
+        }}
+      >
         <div style={{ display: "flex", gap: "10px" }}>
-          <button 
+          <button
             onClick={() => togglePosition("LONG")}
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "LONG" ? "#26a69a" : "transparent",
+              background: side === "LONG" ? "#26a69a" : "transparent",
               border: "1px solid #26a69a",
               color: "white",
               borderRadius: "4px",
               cursor: "pointer",
-              fontWeight: "bold"
+              fontWeight: "bold",
             }}
           >
             LONG
           </button>
 
-          <button 
+          <button
             onClick={() => togglePosition("SHORT")}
             style={{
               flex: 1,
               padding: "8px",
-              background: position === "SHORT" ? "#ef5350" : "transparent",
+              background: side === "SHORT" ? "#ef5350" : "transparent",
               border: "1px solid #ef5350",
               color: "white",
               borderRadius: "4px",
               cursor: "pointer",
-              fontWeight: "bold"
+              fontWeight: "bold",
             }}
           >
             SHORT
@@ -202,48 +220,72 @@ export default function BinanceChart() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <label>Entry Price</label>
-          <input 
-            type="number" 
-            value={entryPrice} 
+          <input
+            type="number"
+            value={entryPrice}
             onChange={(e) => setEntryPrice(Number(e.target.value))}
-            style={{ background: "#1e222d", border: "1px solid #363c4e", color: "white", padding: "4px" }}
+            style={{
+              background: "#1e222d",
+              border: "1px solid #363c4e",
+              color: "white",
+              padding: "4px",
+            }}
           />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <label>Stop Loss</label>
-          <input 
-            type="number" 
-            value={SL} 
+          <input
+            type="number"
+            value={SL}
             onChange={(e) => setSL(Number(e.target.value))}
-            style={{ background: "#1e222d", border: "1px solid #363c4e", color: "white", padding: "4px" }}
+            style={{
+              background: "#1e222d",
+              border: "1px solid #363c4e",
+              color: "white",
+              padding: "4px",
+            }}
           />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <label>Take Profit</label>
-          <input 
-            type="number" 
-            value={TP} 
+          <input
+            type="number"
+            value={TP}
             onChange={(e) => setTP(Number(e.target.value))}
-            style={{ background: "#1e222d", border: "1px solid #363c4e", color: "white", padding: "4px" }}
+            style={{
+              background: "#1e222d",
+              border: "1px solid #363c4e",
+              color: "white",
+              padding: "4px",
+            }}
           />
         </div>
 
-        {position && (
+        {side && (
           <div style={{ marginTop: "5px", fontSize: "10px", color: "#868993" }}>
-            Current Position: <span style={{ color: position === "LONG" ? "#26a69a" : "#ef5350", fontWeight: "bold" }}>{position.toUpperCase()}</span>
+            Current Position:{" "}
+            <span
+              style={{
+                color: side === "LONG" ? "#26a69a" : "#ef5350",
+                fontWeight: "bold",
+              }}
+            >
+              {side.toUpperCase()}
+            </span>
           </div>
         )}
       </div>
 
-      <Chart key={timeframe} autoSize options={chartOptions} >
+      <Chart key={timeframe} autoSize options={chartOptions}>
+        <TimeScale />
         <CandlestickSeries data={data} options={seriesOptions}>
           {entryPrice !== "" && (
             <PriceLine
               price={Number(entryPrice)}
               options={{
-                title: position === "LONG" ? "ENTRY LONG" : "ENTRY SHORT",
+                title: side === "LONG" ? "ENTRY LONG" : "ENTRY SHORT",
                 color: "white",
                 lineWidth: 1,
                 axisLabelVisible: true,

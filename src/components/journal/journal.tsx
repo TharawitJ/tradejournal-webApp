@@ -1,6 +1,6 @@
 import React from "react";
 import type { JournalEntry } from "../../stores/journalStore";
-import { useJournalStore } from "../../stores/journalStore";
+// import { useJournalStore } from "../../stores/journalStore";
 import {
   calculateRR,
   calDuration,
@@ -16,19 +16,20 @@ interface JournalCardProps {
   handleDelete: (recordId: string | number) => void;
 }
 
-const makeToFixed = (data: any) => {
-  if (data) {
-    const toString = data.toString();
-    if (toString >= 5) {
-      const toFix = Number(data);
-      return toFix;
-    } else if (toString <= 2) {
-      const toFix = Number(data).toFixed(3);
-      return toFix;
-    } else {
-      const toFix = Number(data).toFixed(3);
-      return toFix;
-    }
+const makeToFixed = (data: number) => {
+  const toString = data.toString();
+  if (toString.length >= 5) {
+    // console.log(data)s
+
+    const toFix = Number(data).toFixed(2);
+    // console.log("first",typeof Number(toFix))
+    return Number(toFix);
+  } else if (toString.length <= 2) {
+    const toFix = Number(data).toFixed(3);
+    return Number(toFix);
+  } else {
+    const toFix = Number(data).toFixed(3);
+    return Number(toFix);
   }
 };
 
@@ -43,8 +44,8 @@ const JournalCard: React.FC<JournalCardProps> = ({
   const rr = calculateRR(entry);
   // const id = entry.recordId;
   // console.log(entry.winLose)
-  const timeToFormat = new Date().toISOString().slice(0, 16);
-  const formatedTime = timeToFormat;
+  // const timeToFormat = new Date().toISOString().slice(0, 16);
+  // const formatedTime = timeToFormat;
 
   const toFixedentryPrice = makeToFixed(entry.entryPrice);
   const toFixedmargin = makeToFixed(entry.margin);
@@ -52,6 +53,27 @@ const JournalCard: React.FC<JournalCardProps> = ({
   const toFixedtpPercent = makeToFixed(tpPercent);
   const toFixedEntrySL = makeToFixed(entry.SL);
   const toFixedEntryTP = makeToFixed(entry.TP);
+
+  const hdlPnLChange = (winLose) => {
+    if (winLose === "WIN") {
+      // console.log("aa",typeof entry.positionPnL)
+      // console.log("aa",entry.positionPnL)
+      return entry.margin * entry.leverage * tpPercent;
+    } else if (winLose === "LOSE") {
+      return entry.margin * entry.leverage * -slPercent;
+    } else {
+      return 0;
+    }
+  };
+
+  const formatTime_TH = (date) => {
+    const d = new Date(date);
+    const formatted = d.toLocaleString("en-US", {
+      dateStyle: "medium",
+      timeStyle: "medium",
+    });
+    return formatted;
+  };
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-stretch group border-2 border-gray-800 rounded-3xl p-3 hover:border-[#9cff93]/20 transition-all duration-300">
@@ -68,23 +90,13 @@ const JournalCard: React.FC<JournalCardProps> = ({
               {entry.entryAssetName}
             </h3>
           </div>
-          <div className="flex flex-col justify-center items-center gap-1">
-            <span className="font-label text-[10px] text-[#adaaaa] uppercase">
-              PnL
-            </span>
-            <span
-              className={`px-4 py-1.5 rounded-full font-label text-[16px] font-bold uppercase tracking-widest ${
-                entry.positionPnL !== null
-                  ? entry.positionPnL >= 0
-                    ? "bg-[#006c47] text-[#e1ffeb]"
-                    : "bg-[#6c0000] text-[#ffe1e1]"
-                  : "bg-gray-800 text-gray-400"
-              }`}
-            >
-              {entry.positionPnL !== null
-                ? `${entry.positionPnL >= 0 ? "+" : ""}${entry.positionPnL}%`
-                : "On Going"}
-            </span>
+          <div className="text-center">
+            <p className="font-label text-[16px] text-[#adaaaa] uppercase tracking-tighter mb-2">
+              Leverage
+            </p>
+            <p className="font-label text-[16px] text-white/90 tracking-wide">
+              {entry.leverage}
+            </p>
           </div>
         </div>
 
@@ -142,7 +154,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
             </div>
             <div>
               <p className="font-label text-[13px] text-[#adaaaa] uppercase tracking-tighter mb-1">
-                RR Ratio
+                Risk Reward Ratio
               </p>
               <p className="font-label text-s text-white font-bold">1 : {rr}</p>
             </div>
@@ -153,14 +165,23 @@ const JournalCard: React.FC<JournalCardProps> = ({
               <p className="font-label text-[16px] text-[#adaaaa] uppercase tracking-tighter mb-2">
                 Timeline
               </p>
-              <p className="font-label text-[13px] text-white/90 tracking-wide">
-                {formatedTime || "-"}{" "}
-                {entry.exitDateTime ? `→ ${entry.exitDateTime}` : ""}
-              </p>
+              <div className="flex gap-2">
+                <span className="w-14 **:font-label text-[13px] text-white/90 tracking-wide">
+                  Entry
+                </span>
+                <span className="font-label text-[13px] text-white/90 tracking-wide">
+                  {formatTime_TH(entry.entryDateTime) || "-"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="w-14 font-label text-[13px] text-white/90 tracking-wide">
+                  Exit{" "}
+                </span>
+                <span>
+                  {entry.exitDateTime ? formatTime_TH(entry.exitDateTime) : "-"}
+                </span>
+              </div>
             </div>
-            <p className="font-label text-[11px] text-[#adaaaa]">
-              {entry.duration ? `${entry.duration}m` : ""}
-            </p>
           </div>
         </div>
       </div>
@@ -224,6 +245,9 @@ const JournalCard: React.FC<JournalCardProps> = ({
                 : "bg-white/5 border-white/10 text-white/40"
           } hover:brightness-125 font-label text-[13px] font-bold py-5 rounded-lg transition-all border flex flex-col items-center justify-center gap-2 group uppercase tracking-widest`}
         >
+          <p className="font-label text-[24px] font-bold uppercase tracking-widest">
+            {makeToFixed(hdlPnLChange(entry.winLose))}
+          </p>
           <span
             className="material-symbols-outlined text-2xl"
             style={{ fontVariationSettings: "'FILL' 1" }}
@@ -235,10 +259,10 @@ const JournalCard: React.FC<JournalCardProps> = ({
                 : "pending"}
           </span>
           {entry.winLose === "WIN"
-            ? "Win"
+            ? "WIN"
             : entry.winLose === "LOSE"
-              ? "Lose"
-              : "No Result"}
+              ? "LOSE"
+              : "OPEN"}
         </button>
         <button
           onClick={() => handleEditClick(entry)}
@@ -249,7 +273,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
         </button>
         <button
           onClick={() => handleDelete(entry.recordId)}
-          className="flex-1 bg-[#201f1f] hover:bg-[#ff716c]/10 hover:text-[#ff716c] text-[#adaaaa] font-label text-[13px] font-bold py-5 rounded-lg transition-all flex flex-col items-center justify-center gap-2 uppercase tracking-widest"
+          className="flex-1 bg-[#2c0d0d] hover:bg-[#ff716c]/10 hover:text-[#ff716c] text-[#adaaaa] font-label text-[13px] font-bold py-5 rounded-lg transition-all flex flex-col items-center justify-center gap-2 uppercase tracking-widest"
         >
           <span className="material-symbols-outlined text-2xl">delete</span>
           Delete

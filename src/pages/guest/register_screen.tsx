@@ -26,12 +26,12 @@ const RegisterScreen: React.FC = () => {
   // const { errors, isSubmitting } = formState;
   const navigate = useNavigate();
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (registdata) => {
     // e?.preventDefault();
     // console.log(data)
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      await apiRegister(data);
+      await apiRegister(registdata);
       toast.success("Register Successful", {
         transition: Zoom,
         autoClose: 4000,
@@ -41,7 +41,7 @@ const RegisterScreen: React.FC = () => {
       }, 3000);
     } catch (err) {
       console.dir(err);
-      const errMsg = err.response?.data.message || err.message;
+      const errMsg = err.response?.registdata.message || err.message;
       // alert(JSON.stringify(err,null,2))
       toast.error(errMsg, {
         transition: Zoom,

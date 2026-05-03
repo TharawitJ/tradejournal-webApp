@@ -4,21 +4,45 @@ import { TIMEZONES } from "../commons/chartOption";
 
 interface ChartData {
   time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
 }
 
+const TIMEFRAME_SECONDS: Record<string, number> = {
+  "1m": 60,
+  "5m": 300,
+  "15m": 900,
+  "1h": 3600,
+  "4h": 14400,
+  "1d": 86400,
+};
+
+const generateWhitespace = (lastTime: number, firstTime: number, timeframe: string) => {
+  const seconds = TIMEFRAME_SECONDS[timeframe] || 60;
+  // Define a fixed time buffer (e.g., 60 days of empty space)
+  const BUFFER_DURATION = 300 * 24 * 3600; 
+  const count = Math.ceil(BUFFER_DURATION / seconds);
+
+  const future = Array.from({ length: count*24 }, (_, i) => ({
+    time: lastTime + (i + 1) * seconds,
+  }));
+  const past = Array.from({ length: count }, (_, i) => ({
+    time: firstTime - (i + 1) * seconds,
+  })).reverse();
+  return { past, future };
+};
 
 interface ChartState {
   data: ChartData[];
   lastPrice: number | null;
   timeframe: string;
-  position: "LONG" | "SHORT";
+  side: "LONG" | "SHORT" | "";
   entryPrice: number | "";
   SL: number | "";
   TP: number | "";
+  currentAssetId:number;
   currentAssetName: string;
   timezone: string;
 
@@ -32,7 +56,8 @@ interface ChartState {
   setLastPrice: (price: number) => void;
   setTimeframe: (tf: string) => void;
   setTimezone: (tz: string) => void;
-  setPosition: (pos: "LONG" | "SHORT" ) => void;
+  setPosition: (pos: "LONG" | "SHORT" | "") => void;
+  setCurrentAssetId: (asset: number|string) => void;
   setCurrentAssetName: (asset: string) => void;
   setEntryPrice: (price: number | "") => void;
   setSL: (price: number | "") => void;
@@ -43,21 +68,22 @@ interface ChartState {
 
 
 const calculateStats = (data: ChartData[]) => {
-  if (data.length === 0) return { max: null, min: null, avg: null };
+  const realData = data.filter(d => d.close !== undefined);
+  if (realData.length === 0) return { max: null, min: null, avg: null };
   let max = -Infinity;
   let min = Infinity;
   let sum = 0;
 
-  for (const candle of data) {
-    if (candle.high > max) max = candle.high;
-    if (candle.low < min) min = candle.low;
-    sum += candle.close;
+  for (const candle of realData) {
+    if (candle.high! > max) max = candle.high!;
+    if (candle.low! < min) min = candle.low!;
+    sum += candle.close!;
   }
 
   return {
     max: Number(max.toFixed(3)),
     min: Number(min.toFixed(3)),
-    avg: Number((sum / data.length).toFixed(3)),
+    avg: Number((sum / realData.length).toFixed(3)),
   };
 };
 
@@ -65,25 +91,34 @@ export const useChartStore = create<ChartState>((set, get) => ({
   data: [],
   lastPrice: null,
   timeframe: localStorage.getItem("selectedTimeframe") || "1d",
-  position:null,
+  side:"",
   entryPrice: "",
   SL: "",
   TP: "",
-  currentAssetName: localStorage.getItem("selectedAsset") || "BTCUSDT",
+  currentAssetName: localStorage.getItem("selectedAssetName") || "BTCUSDT",
+  currentAssetId: Number(localStorage.getItem("selectedAssetId")) || 1,
   timezone: localStorage.getItem("selectedTimezone") || "UTC",
 
   maxPrice: null,
   minPrice: null,
   avgPrice: null,
-  // showMaxLine: false,
-  // showMinLine: false,
-  // showAvgLine: false,
 
   setData: (data) => {
-    const lastPrice = data.length > 0 ? data[data.length - 1].close : null;
-    const stats = calculateStats(data);
+    const { timeframe } = get();
+    const realData = data.filter(d => d.close !== undefined);
+    const lastPrice = realData.length > 0 ? realData[realData.length - 1].close! : null;
+    const stats = calculateStats(realData);
+    
+    let displayData = data;
+    if (realData.length > 0) {
+      const firstTime = realData[0].time;
+      const lastTime = realData[realData.length - 1].time;
+      const { past, future } = generateWhitespace(lastTime, firstTime, timeframe);
+      displayData = [...past, ...realData, ...future];
+    }
+
     set({
-      data,
+      data: displayData,
       lastPrice,
         maxPrice: stats.max,
         minPrice: stats.min,
@@ -92,25 +127,32 @@ export const useChartStore = create<ChartState>((set, get) => ({
   },
 
   updateLastCandle: (candle) => {
-    const { data } = get();
-    let updatedData;
-    if (data.length === 0) {
-      updatedData = [candle];
+    const { data, timeframe } = get();
+    const realData = data.filter(d => d.close !== undefined);
+    let updatedRealData;
+
+    if (realData.length === 0) {
+      updatedRealData = [candle];
     } else {
-      const last = data[data.length - 1];
+      const last = realData[realData.length - 1];
       if (candle.time < last.time) return;
       if (last.time === candle.time) {
-        updatedData = [...data];
-        updatedData[updatedData.length - 1] = candle;
+        updatedRealData = [...realData];
+        updatedRealData[updatedRealData.length - 1] = candle;
       } else {
-        updatedData = [...data, candle];
+        updatedRealData = [...realData, candle];
       }
     }
 
-    const stats = calculateStats(updatedData);
+    const stats = calculateStats(updatedRealData);
+    const firstTime = updatedRealData[0].time;
+    const lastTime = updatedRealData[updatedRealData.length - 1].time;
+    const { past, future } = generateWhitespace(lastTime, firstTime, timeframe);
+    const displayData = [...past, ...updatedRealData, ...future];
+
     set({
-      data: updatedData,
-      lastPrice: candle.close,
+      data: displayData,
+      lastPrice: candle.close!,
       maxPrice: stats.max,
       minPrice: stats.min,
       avgPrice: stats.avg,
@@ -126,20 +168,25 @@ export const useChartStore = create<ChartState>((set, get) => ({
     localStorage.setItem("selectedTimezone", tz);
     set({ timezone: tz });
   },
-  setPosition: (pos) => set({ position: pos }),
-  setCurrentAssetName: (asset) => {
-    localStorage.setItem("selectedAsset", asset);
-    set({ currentAssetName: asset });
+  setPosition: (pos) => set({ side: pos }),
+  setCurrentAssetName: (assetName) => {
+    localStorage.setItem("selectedAssetName", assetName);
+    set({ currentAssetName: assetName });
+  },
+  setCurrentAssetId:(assetId)=>{
+    set({currentAssetId:Number(assetId)})
+    localStorage.setItem("selectedAssetId",assetId.toString())
+    // localStorage converts data to string internally
   },
   setEntryPrice: (price) => set({ entryPrice: price }),
   setSL: (price) => set({ SL: price }),
   setTP: (price) => set({ TP: price }),
 
   togglePosition: (type) => {
-    const { position, lastPrice } = get();
-    if (position === type) {
+    const { side, lastPrice } = get();
+    if (side === type) {
       set({
-        position: "OPEN",
+        side: "",
         entryPrice: "",
         SL: "",
         TP: "",
@@ -153,13 +200,13 @@ export const useChartStore = create<ChartState>((set, get) => ({
         const tp = type === "LONG" ? entry + offsetTP : entry - offsetTP;
 
         set({
-          position: type,
+          side: type,
           entryPrice: entry,
           SL: Number(sl.toFixed(3)),
           TP: Number(tp.toFixed(3)),
         });
       } else {
-        set({ position: type });
+        set({ side: type });
       }
     }
   },
