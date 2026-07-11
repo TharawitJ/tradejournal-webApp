@@ -15,7 +15,6 @@ const FullPerformanceDashboard: React.FC = () => {
     <div className="bg-[#0e0e0e] text-[#ffffff] bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary min-h-screen overflow-x-hidden">
 
       {/* Main Content Area - Full Width */}
-      <main className="pb-24 md:pb-8">
         {/* Dashboard Content */}
         <div className="px-6 py-8 max-w-7xl mx-auto space-y-12">
           {/* Zone 1: Performance Chart */}
@@ -206,7 +205,6 @@ const FullPerformanceDashboard: React.FC = () => {
             </div>
           </section>
         </div>
-      </main>
 
       {/* Mobile BottomNavBar */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-4 pt-2 bg-[#0e0e0e]/80 backdrop-blur-xl z-50 border-t border-[#494847]/20 shadow-2xl">
