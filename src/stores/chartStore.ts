@@ -4,12 +4,35 @@ import { TIMEZONES } from "../commons/chartOption";
 
 interface ChartData {
   time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
 }
 
+const TIMEFRAME_SECONDS: Record<string, number> = {
+  "1m": 60,
+  "5m": 300,
+  "15m": 900,
+  "1h": 3600,
+  "4h": 14400,
+  "1d": 86400,
+};
+
+const generateWhitespace = (lastTime: number, firstTime: number, timeframe: string) => {
+  const seconds = TIMEFRAME_SECONDS[timeframe] || 60;
+  // Define a fixed time buffer (e.g., 60 days of empty space)
+  const BUFFER_DURATION = 300 * 24 * 3600; 
+  const count = Math.ceil(BUFFER_DURATION / seconds);
+
+  const future = Array.from({ length: count*24 }, (_, i) => ({
+    time: lastTime + (i + 1) * seconds,
+  }));
+  const past = Array.from({ length: count }, (_, i) => ({
+    time: firstTime - (i + 1) * seconds,
+  })).reverse();
+  return { past, future };
+};
 
 interface ChartState {
   data: ChartData[];
@@ -45,21 +68,22 @@ interface ChartState {
 
 
 const calculateStats = (data: ChartData[]) => {
-  if (data.length === 0) return { max: null, min: null, avg: null };
+  const realData = data.filter(d => d.close !== undefined);
+  if (realData.length === 0) return { max: null, min: null, avg: null };
   let max = -Infinity;
   let min = Infinity;
   let sum = 0;
 
-  for (const candle of data) {
-    if (candle.high > max) max = candle.high;
-    if (candle.low < min) min = candle.low;
-    sum += candle.close;
+  for (const candle of realData) {
+    if (candle.high! > max) max = candle.high!;
+    if (candle.low! < min) min = candle.low!;
+    sum += candle.close!;
   }
 
   return {
     max: Number(max.toFixed(3)),
     min: Number(min.toFixed(3)),
-    avg: Number((sum / data.length).toFixed(3)),
+    avg: Number((sum / realData.length).toFixed(3)),
   };
 };
 
@@ -78,15 +102,23 @@ export const useChartStore = create<ChartState>((set, get) => ({
   maxPrice: null,
   minPrice: null,
   avgPrice: null,
-  // showMaxLine: false,
-  // showMinLine: false,
-  // showAvgLine: false,
 
   setData: (data) => {
-    const lastPrice = data.length > 0 ? data[data.length - 1].close : null;
-    const stats = calculateStats(data);
+    const { timeframe } = get();
+    const realData = data.filter(d => d.close !== undefined);
+    const lastPrice = realData.length > 0 ? realData[realData.length - 1].close! : null;
+    const stats = calculateStats(realData);
+    
+    let displayData = data;
+    if (realData.length > 0) {
+      const firstTime = realData[0].time;
+      const lastTime = realData[realData.length - 1].time;
+      const { past, future } = generateWhitespace(lastTime, firstTime, timeframe);
+      displayData = [...past, ...realData, ...future];
+    }
+
     set({
-      data,
+      data: displayData,
       lastPrice,
         maxPrice: stats.max,
         minPrice: stats.min,
@@ -95,25 +127,32 @@ export const useChartStore = create<ChartState>((set, get) => ({
   },
 
   updateLastCandle: (candle) => {
-    const { data } = get();
-    let updatedData;
-    if (data.length === 0) {
-      updatedData = [candle];
+    const { data, timeframe } = get();
+    const realData = data.filter(d => d.close !== undefined);
+    let updatedRealData;
+
+    if (realData.length === 0) {
+      updatedRealData = [candle];
     } else {
-      const last = data[data.length - 1];
+      const last = realData[realData.length - 1];
       if (candle.time < last.time) return;
       if (last.time === candle.time) {
-        updatedData = [...data];
-        updatedData[updatedData.length - 1] = candle;
+        updatedRealData = [...realData];
+        updatedRealData[updatedRealData.length - 1] = candle;
       } else {
-        updatedData = [...data, candle];
+        updatedRealData = [...realData, candle];
       }
     }
 
-    const stats = calculateStats(updatedData);
+    const stats = calculateStats(updatedRealData);
+    const firstTime = updatedRealData[0].time;
+    const lastTime = updatedRealData[updatedRealData.length - 1].time;
+    const { past, future } = generateWhitespace(lastTime, firstTime, timeframe);
+    const displayData = [...past, ...updatedRealData, ...future];
+
     set({
-      data: updatedData,
-      lastPrice: candle.close,
+      data: displayData,
+      lastPrice: candle.close!,
       maxPrice: stats.max,
       minPrice: stats.min,
       avgPrice: stats.avg,
