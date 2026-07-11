@@ -20,24 +20,6 @@ interface JournalState {
   updateJournal: (id: number, updates: Partial<JournalEntry>) => void;
 }
 
-// interface allAssetState {
-
-// }
-
-// // allAsset: allAsset[]
-// export const useFetchAllAsset = create<allAssetState>((set) => ({
-//   allAsset: [],
-//   fetchAllAsset: async () => {
-//     try {
-//       const resp = await getAllAsset();
-//       set({ allAsset: resp.data.data || [] });
-//       // console.log(resp.data.data);
-//     } catch (err) {
-//       console.error("Failed to fetch user fund history");
-//     }
-//   },
-// }));
-
 export const useJournalStore = create<JournalState>()(
   persist(
     (set) => ({
@@ -69,7 +51,8 @@ export const useJournalStore = create<JournalState>()(
           await apiCreateJournal(body);
           const resp = await apiGetAllJournal();
 
-          set({ data: resp.data.journalFound || [] });
+          set({ entries: resp.data.journalFound || [] });
+          console.log('data', resp.data.journalFound)
         } catch (err) {
           console.error("Failed to create journal");
         }

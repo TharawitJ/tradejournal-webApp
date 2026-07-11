@@ -1,5 +1,5 @@
-import React from "react";
-import type { JournalEntry } from "../../stores/journalStore";
+import React, { useState } from "react";
+// import type { JournalEntry } from "../../stores/journalStore";
 // import { useJournalStore } from "../../stores/journalStore";
 import {
   calculateRR,
@@ -11,11 +11,11 @@ import {
 
 interface JournalCardProps {
   entry: JournalEntry;
-  handleToggleResult: (recordId: string | number) => void;
+  // winLose:"OPEN"|"WIN"|"LOSE";
+  handleToggleResult: (recordId: number, positionPnL: number) => void;
   handleEditClick: (entry: JournalEntry) => void;
-  handleDelete: (recordId: string | number) => void;
+  handleDelete: (recordId: number) => void;
 }
-
 const makeToFixed = (data: number) => {
   const toString = data.toString();
   if (toString.length >= 5) {
@@ -54,21 +54,46 @@ const JournalCard: React.FC<JournalCardProps> = ({
   const toFixedEntrySL = makeToFixed(entry.SL);
   const toFixedEntryTP = makeToFixed(entry.TP);
 
-  const hdlPnLChange = (winLose) => {
+  const hdlPnLChange = (winLose: string) => {
     if (winLose === "WIN") {
       // console.log("aa",typeof entry.positionPnL)
       // console.log("aa",entry.positionPnL)
-      return entry.margin * entry.leverage * tpPercent;
+      const result = entry.margin * entry.leverage * tpPercent;
+      const resultToFix = Number(result.toFixed(3));
+      return resultToFix
     } else if (winLose === "LOSE") {
-      return entry.margin * entry.leverage * -slPercent;
+      const result = entry.margin * entry.leverage * -slPercent;
+      const resultToFix = Number(result.toFixed(3));
+      console.log('resultToFix', resultToFix)
+      return resultToFix
     } else {
       return 0;
     }
   };
 
-  const formatTime_TH = (date) => {
-    const d = new Date(date);
-    const formatted = d.toLocaleString("en-US", {
+    const hdlNextPnL = (winLose: string) => {
+    if (winLose === "OPEN") {
+      // console.log("aa",typeof entry.positionPnL)
+      // console.log("aa",entry.positionPnL)
+      const result = entry.margin * entry.leverage * tpPercent;
+      const resultToFix = Number(result.toFixed(3));
+      return resultToFix
+    } else if (winLose === "WIN") {
+      const result = entry.margin * entry.leverage * -slPercent;
+      const resultToFix = Number(result.toFixed(3));
+      console.log('resultToFix', resultToFix)
+      return resultToFix
+    } else {
+      return 0;
+    }
+  };
+
+  const formatTime_TH = (time: string | number | undefined): string => {
+    if (time === undefined || time === null || time === "") {
+      return "-";
+    }
+    const newDate = new Date(time);
+    const formatted = newDate.toLocaleString("en-US", {
       dateStyle: "medium",
       timeStyle: "medium",
     });
@@ -236,7 +261,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
 
       <div className="w-full xl:w-48 flex xl:flex-col gap-4">
         <button
-          onClick={() => handleToggleResult(entry.recordId)}
+          onClick={() => handleToggleResult(entry.recordId, hdlNextPnL(entry.winLose))}
           className={`flex-1 ${
             entry.winLose === "WIN"
               ? "bg-[#9cff93]/10 border-[#9cff93]/30 text-[#9cff93]"
@@ -246,7 +271,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
           } hover:brightness-125 font-label text-[13px] font-bold py-5 rounded-lg transition-all border flex flex-col items-center justify-center gap-2 group uppercase tracking-widest`}
         >
           <p className="font-label text-[24px] font-bold uppercase tracking-widest">
-            {makeToFixed(hdlPnLChange(entry.winLose))}
+            {makeToFixed(hdlPnLChange(entry?.winLose || "OPEN"))}
           </p>
           <span
             className="material-symbols-outlined text-2xl"
@@ -254,7 +279,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
           >
             {entry.winLose === "WIN"
               ? "emoji_events"
-              : entry.winLose === "LOSE"
+              : entry.winLose === "OPEN"
                 ? "trending_down"
                 : "pending"}
           </span>

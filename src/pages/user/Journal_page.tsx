@@ -11,8 +11,14 @@ import { toast } from "react-toastify";
 import JournalCard from "../../components/journal/journal";
 
 const JournalPage: React.FC = () => {
-  const { entries, updateJournal, setEntries,allAsset, deleteJournal, fetchJournal } =
-    useJournalStore();
+  const {
+    entries,
+    updateJournal,
+    setEntries,
+    allAsset,
+    deleteJournal,
+    fetchJournal,
+  } = useJournalStore();
 
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -25,9 +31,9 @@ const JournalPage: React.FC = () => {
 
   // Modal form state
   const [form, setForm] = useState({
-    entryAssetId:0,
+    entryAssetId: 0,
     entryAssetName: "",
-    entryModelId:0,
+    entryModelId: 0,
     entryModelName: "",
     setUpTier: "A",
     entryPrice: "",
@@ -52,7 +58,7 @@ const JournalPage: React.FC = () => {
 
   const userModels = useUserStore((state) => state.userModels);
   const fetchUserModels = useUserStore((state) => state.fetchUserModels);
-  
+
   // console.log("asd",allAsset)
   useEffect(() => {
     fetchJournal();
@@ -88,8 +94,8 @@ const JournalPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (entry: JournalEntry) => {
-    setEditingEntry(entry);
+  const handleSave = async (editingEntry: JournalEntry | null) => {
+    setEditingEntry(editingEntry);
     try {
       const data = {
         entryAssetId: form.entryAssetId,
@@ -108,14 +114,12 @@ const JournalPage: React.FC = () => {
         disadvantage: form.disadvantage,
         notes: form.notes,
         feedback: form.feedback,
-        winLose: form.winLose === "OPEN" ? "OPEN" : form.winLose,
+        winLose: form.winLose as "WIN" | "LOSE" | "OPEN",
         profit: form.profit ? parseFloat(form.profit) : undefined,
         currentBalance: form.currentBalance
           ? parseFloat(form.currentBalance)
           : undefined,
-        positionPnL: form.positionPnL
-          ? parseFloat(form.positionPnL)
-          : 0,
+        positionPnL: form.positionPnL ? parseFloat(form.positionPnL) : 0,
         duration: form.duration ? parseInt(form.duration) : undefined,
       };
 
@@ -137,7 +141,7 @@ const JournalPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (recordId: string | number) => {
+  const handleDelete = async (recordId: number) => {
     if (window.confirm("Are you sure you want to delete this trade?")) {
       try {
         deleteJournal(recordId);
@@ -154,18 +158,27 @@ const JournalPage: React.FC = () => {
   }, []);
   // console.log(userModels);
 
-  const handleToggleResult = async (id: string | number) => {
+  const handleToggleResult = async (id: number,nextPnL:number) => {
     const entry = entries.find((e) => e.recordId === id);
     if (!entry) return;
 
-    let nextResult: "WIN" | "LOSE" | "OPEN" = "OPEN";
-    if (entry.winLose === "OPEN") nextResult = "WIN";
-    else if (entry.winLose === "WIN") nextResult = "LOSE";
-    else nextResult = "OPEN";
+    let nextWinLose: "WIN" | "LOSE" | "OPEN" = "OPEN";
+    // update PnL/ exit date/
+    if (entry.winLose === "OPEN") {
+      nextWinLose = "WIN";
+    } else if (entry.winLose === "WIN") {
+      nextWinLose = "LOSE";
+    } else {
+      nextWinLose = "OPEN";
+    }
+
 
     try {
       // await apiUpdateJournal(id.toString(), { winLose: nextResult });
-      updateJournal(id, { winLose: nextResult });
+      updateJournal(id, { winLose: nextWinLose ,
+        positionPnL:nextPnL,
+        exitDateTime:new Date().toISOString()
+      });
       // fetchStats();
     } catch (err) {
       toast.error("Failed to update result");
@@ -251,7 +264,8 @@ const JournalPage: React.FC = () => {
                     className="bg-transparent text-white border-none focus:outline-none cursor-pointer "
                   >
                     {allAsset.map((asset) => (
-                      <option className="text-white bg-[#1a1919]"
+                      <option
+                        className="text-white bg-[#1a1919]"
                         key={asset.assetId}
                         value={asset.assetId} // The value is now the ID (1, 2, or 3)
                       >
@@ -413,10 +427,10 @@ const JournalPage: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleSave}
+                  onClick={() => handleSave(editingEntry)}
                   className="flex-1 py-4 rounded-xl font-label font-bold uppercase tracking-widest text-sm bg-gradient-to-br from-[#9cff93] to-[#00fc40] text-[#006413] hover:brightness-110 transition-all"
                 >
-                  {editingEntry ? "Save Changes" : "Create Trade"}
+                  Save Changes
                 </button>
               </div>
             </div>

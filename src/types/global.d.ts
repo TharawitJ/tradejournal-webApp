@@ -2,9 +2,11 @@ export {};
 
 declare global {
   interface User {
-    userId: number;
+    userId?: number;
     username: string;
     email: string;
+    password?: string;
+    startFund?: number;
   }
 
   interface EntryModel {
@@ -29,9 +31,9 @@ declare global {
     entryAssetName: string;
     entryModelId: number;
     entryModelName: string;
-    setUpTier: string;
-    entryDateTime?: string | number;
-    exitDateTime?: string | number;
+    setUpTier?: string;
+    entryDateTime?: string | number | undefined;
+    exitDateTime?: string | number | undefined;
     entryPrice: number;
     SL: number;
     TP: number;
@@ -40,7 +42,7 @@ declare global {
     notes?: string;
     feedback?: string;
     imageUrl?: string;
-    winLose?: "WIN" | "LOSE" | "OPEN";
+    winLose: "WIN" | "LOSE" | "OPEN";
     profit?: number;
     currentBalance?: number;
     duration?: number;
@@ -50,8 +52,14 @@ declare global {
     leverage: number;
 
     // Frontend display helpers
+    // where?
     assetName?: string;
     entryModel?: string;
-    side?: ""|"LONG" | "SHORT";
+    side?: side;
+  }
+  enum side {
+    "",
+    "LONG",
+    "SHORT",
   }
 }

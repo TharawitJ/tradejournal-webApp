@@ -26,7 +26,7 @@ const RegisterScreen: React.FC = () => {
   // const { errors, isSubmitting } = formState;
   const navigate = useNavigate();
 
-  const onSubmit = async (registdata) => {
+  const onSubmit = async (registdata:User) => {
     // e?.preventDefault();
     // console.log(data)
     try {
@@ -132,38 +132,6 @@ const RegisterScreen: React.FC = () => {
                   />
                 </div>
               </div>
-
-              {/* Terms Checkbox */}
-              <div className="flex items-start gap-3 pt-2">
-                {/* <div className="flex items-center h-5">
-                  <input
-                    className="w-4 h-4 rounded bg-surface-container-lowest border-outline-variant/20 text-primary focus:ring-primary/40 focus:ring-offset-surface"
-                    id="terms"
-                    type="checkbox"
-                  />
-                </div> */}
-                {/* <label
-                  className="text-[0.8rem] text-on-surface-variant leading-tight"
-                  htmlFor="terms"
-                >
-                  I agree to the{" "}
-                  <a
-                    className="text-on-surface hover:text-primary transition-colors underline decoration-outline-variant/30 underline-offset-4"
-                    href="#"
-                  >
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a
-                    className="text-on-surface hover:text-primary transition-colors underline decoration-outline-variant/30 underline-offset-4"
-                    href="#"
-                  >
-                    Privacy Policy
-                  </a>
-                  .
-                </label> */}
-              </div>
-
               {/* Primary Action */}
               <button
                 className="w-full bg-gradient-to-br from-[#9cff93] to-[#00fc40] text-on-primary font-label font-bold text-[0.875rem] tracking-widest py-4 rounded active:scale-[0.98] transition-all hover:brightness-110 uppercase shadow-lg shadow-primary/10 text-[#201f1f]"
